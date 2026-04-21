@@ -1,6 +1,7 @@
 import type { Alert } from '@/data/models';
 import type { AlertType } from '@/shared/types/common';
 import { alertRepository } from '@/data/repositories';
+import { schedulePush } from '@/application/notifications';
 
 const ALERT_THRESHOLDS_DAYS = [90, 60, 30, 7] as const;
 
@@ -41,6 +42,7 @@ export async function scheduleAlerts(
       daysBeforeExpiry: days,
       isRead: false,
     });
+    schedulePush(alert);
     created.push(alert);
   }
 

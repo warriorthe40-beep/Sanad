@@ -4,6 +4,7 @@ import { PurchaseRepository } from './PurchaseRepository';
 import { StorePolicyRepository } from './StorePolicyRepository';
 import { CategoryRepository } from './CategoryRepository';
 import { AlertRepository } from './AlertRepository';
+import { ClaimRepository } from './ClaimRepository';
 
 export type { Entity, Repository } from './Repository';
 export { BaseRepository } from './BaseRepository';
@@ -12,6 +13,7 @@ export { PurchaseRepository } from './PurchaseRepository';
 export { StorePolicyRepository } from './StorePolicyRepository';
 export { CategoryRepository } from './CategoryRepository';
 export { AlertRepository } from './AlertRepository';
+export { ClaimRepository } from './ClaimRepository';
 
 /**
  * Default repository singletons wired to `defaultStorageAdapter`.
@@ -24,3 +26,4 @@ export const purchaseRepository = new PurchaseRepository(defaultStorageAdapter);
 export const storePolicyRepository = new StorePolicyRepository(defaultStorageAdapter);
 export const categoryRepository = new CategoryRepository(defaultStorageAdapter);
 export const alertRepository = new AlertRepository(defaultStorageAdapter);
+export const claimRepository = new ClaimRepository(defaultStorageAdapter);
