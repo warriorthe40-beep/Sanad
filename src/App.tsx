@@ -1,8 +1,10 @@
+import { BrowserRouter } from 'react-router-dom';
+import AppRoutes from './presentation/routes/AppRoutes';
+
 export default function App() {
   return (
-    <main className="app-placeholder">
-      <h1>Sanad</h1>
-      <p>Warranty &amp; Receipt Organizer</p>
-    </main>
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   );
 }
