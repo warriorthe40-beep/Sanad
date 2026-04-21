@@ -21,13 +21,17 @@ import ManageCategoriesPage from '@/presentation/pages/admin/ManageCategories/Ma
 import ManageStorePoliciesPage from '@/presentation/pages/admin/ManageStorePolicies/ManageStorePoliciesPage';
 import MonitorCommunityPage from '@/presentation/pages/admin/MonitorCommunity/MonitorCommunityPage';
 
+import RequireAuth from '@/auth/guards/RequireAuth';
+import RequireAdmin from '@/auth/guards/RequireAdmin';
+import RoleLanding from '@/auth/guards/RoleLanding';
+
 /**
- * Top-level route tree. Two layout branches:
- *   - AuthLayout: /login, /register (no sidebar — unauthenticated surface)
- *   - AppLayout:  everything else (sidebar + topbar shell)
+ * Route tree with role-based access control:
  *
- * Route guards for User vs Admin live in src/auth/guards and will wrap the
- * appropriate subtrees in a later task.
+ *   - /login, /register  — AuthLayout, public.
+ *   - /                  — RoleLanding redirect (admin → /admin, user → /purchases).
+ *   - /purchases, /alerts, /analytics, /claims  — RequireAuth.
+ *   - /admin/*           — RequireAuth + RequireAdmin.
  */
 export default function AppRoutes() {
   return (
@@ -37,22 +41,27 @@ export default function AppRoutes() {
         <Route path="/register" element={<RegisterPage />} />
       </Route>
 
-      <Route element={<AppLayout />}>
-        <Route index element={<PurchaseListPage />} />
-        <Route path="purchases" element={<PurchaseListPage />} />
-        <Route path="purchases/new" element={<AddPurchasePage />} />
-        <Route path="purchases/new/quick" element={<QuickAddPage />} />
-        <Route path="purchases/:id" element={<PurchaseDetailsPage />} />
-        <Route path="purchases/:id/edit" element={<EditPurchasePage />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<RoleLanding />} />
 
-        <Route path="alerts" element={<AlertsPage />} />
-        <Route path="analytics" element={<AnalyticsPage />} />
-        <Route path="claims" element={<ClaimsPage />} />
+          <Route path="purchases" element={<PurchaseListPage />} />
+          <Route path="purchases/new" element={<AddPurchasePage />} />
+          <Route path="purchases/new/quick" element={<QuickAddPage />} />
+          <Route path="purchases/:id" element={<PurchaseDetailsPage />} />
+          <Route path="purchases/:id/edit" element={<EditPurchasePage />} />
 
-        <Route path="admin" element={<AdminDashboardPage />} />
-        <Route path="admin/categories" element={<ManageCategoriesPage />} />
-        <Route path="admin/policies" element={<ManageStorePoliciesPage />} />
-        <Route path="admin/community" element={<MonitorCommunityPage />} />
+          <Route path="alerts" element={<AlertsPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
+          <Route path="claims" element={<ClaimsPage />} />
+
+          <Route element={<RequireAdmin />}>
+            <Route path="admin" element={<AdminDashboardPage />} />
+            <Route path="admin/categories" element={<ManageCategoriesPage />} />
+            <Route path="admin/policies" element={<ManageStorePoliciesPage />} />
+            <Route path="admin/community" element={<MonitorCommunityPage />} />
+          </Route>
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

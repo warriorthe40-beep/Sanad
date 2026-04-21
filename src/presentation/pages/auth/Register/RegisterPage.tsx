@@ -1,17 +1,213 @@
-import { Link } from 'react-router-dom';
-import styles from '../Login/LoginPage.module.css';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/auth/context/AuthContext';
+import { AuthError } from '@/auth/services';
 
+interface FormState {
+  name: string;
+  email: string;
+  password: string;
+  confirm: string;
+  asAdmin: boolean;
+}
+
+const INITIAL: FormState = {
+  name: '',
+  email: '',
+  password: '',
+  confirm: '',
+  asAdmin: false,
+};
+
+/**
+ * RegisterPage — creates a new account via the auth service and signs the
+ * user in on success. The "Register as admin" toggle exists to let the
+ * prototype demo the admin flows without needing a seeded admin account.
+ */
 export default function RegisterPage() {
+  const navigate = useNavigate();
+  const { register } = useAuth();
+  const [form, setForm] = useState<FormState>(INITIAL);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const { name, value, type, checked } = event.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+    setError(null);
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isSubmitting) return;
+
+    if (form.password !== form.confirm) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const user = await register({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        asAdmin: form.asAdmin,
+      });
+      navigate(user.role === 'admin' ? '/admin' : '/purchases', { replace: true });
+    } catch (err) {
+      setError(
+        err instanceof AuthError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Could not create account.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <div>
-      <h1 className={styles.heading}>Create your account</h1>
-      <p className={styles.subheading}>Start organising your receipts and warranties in one place.</p>
-      <div className={styles.placeholder}>
-        Registration form coming next — name, email, and password (min 8 characters).
-      </div>
-      <p className={styles.switchLink}>
-        Already have an account? <Link to="/login">Sign in</Link>
+      <h1 className="mb-1 text-xl font-semibold text-slate-900">Create your account</h1>
+      <p className="mb-6 text-sm text-slate-600">
+        Start organising your receipts and warranties in one place.
       </p>
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <Field
+          label="Name"
+          name="name"
+          type="text"
+          autoComplete="name"
+          value={form.name}
+          onChange={handleChange}
+          disabled={isSubmitting}
+          required
+          autoFocus
+        />
+        <Field
+          label="Email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          value={form.email}
+          onChange={handleChange}
+          disabled={isSubmitting}
+          required
+        />
+        <Field
+          label="Password"
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          value={form.password}
+          onChange={handleChange}
+          disabled={isSubmitting}
+          required
+          hint="At least 8 characters."
+        />
+        <Field
+          label="Confirm password"
+          name="confirm"
+          type="password"
+          autoComplete="new-password"
+          value={form.confirm}
+          onChange={handleChange}
+          disabled={isSubmitting}
+          required
+        />
+
+        <label className="flex items-start gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            name="asAdmin"
+            checked={form.asAdmin}
+            onChange={handleChange}
+            disabled={isSubmitting}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand/40"
+          />
+          <span>
+            Register as admin
+            <span className="ml-1 text-xs text-slate-500">
+              (demo — gives access to category and store-policy management)
+            </span>
+          </span>
+        </label>
+
+        {error ? (
+          <p className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+            {error}
+          </p>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex w-full justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover disabled:opacity-60"
+        >
+          {isSubmitting ? 'Creating account…' : 'Create account'}
+        </button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-slate-600">
+        Already have an account?{' '}
+        <Link to="/login" className="font-semibold text-brand-hover hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+interface FieldProps {
+  label: string;
+  name: string;
+  type?: string;
+  value: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
+  required?: boolean;
+  autoComplete?: string;
+  autoFocus?: boolean;
+  hint?: string;
+}
+
+function Field({
+  label,
+  name,
+  type = 'text',
+  value,
+  onChange,
+  disabled,
+  required,
+  autoComplete,
+  autoFocus,
+  hint,
+}: FieldProps) {
+  return (
+    <div>
+      <label htmlFor={name} className="mb-1 block text-sm font-medium text-slate-800">
+        {label}
+        {required ? <span className="text-rose-600"> *</span> : null}
+      </label>
+      <input
+        id={name}
+        name={name}
+        type={type}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        autoComplete={autoComplete}
+        autoFocus={autoFocus}
+        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:bg-slate-50"
+      />
+      {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
     </div>
   );
 }

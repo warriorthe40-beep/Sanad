@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/auth/context/AuthContext';
 import styles from './Sidebar.module.css';
 
 interface SidebarProps {
@@ -14,7 +15,7 @@ interface NavItem {
 }
 
 const primaryNav: NavItem[] = [
-  { to: '/', label: 'Purchases', icon: '🧾', end: true },
+  { to: '/purchases', label: 'Purchases', icon: '🧾', end: true },
   { to: '/purchases/new', label: 'Add Purchase', icon: '➕' },
   { to: '/alerts', label: 'Alerts', icon: '🔔' },
   { to: '/analytics', label: 'Analytics', icon: '📊' },
@@ -28,6 +29,15 @@ const adminNav: NavItem[] = [
 ];
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const isAdmin = user?.role === 'admin';
+
+  function handleLogout() {
+    logout();
+    navigate('/login', { replace: true });
+  }
+
   return (
     <aside
       className={`${styles.sidebar} ${open ? styles.sidebarOpen : ''}`}
@@ -56,27 +66,31 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         ))}
       </nav>
 
-      <nav className={styles.group} aria-label="Admin">
-        <span className={styles.groupLabel}>Admin</span>
-        {adminNav.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
-            }
-            onClick={onClose}
-          >
-            <span className={styles.icon} aria-hidden="true">{item.icon}</span>
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+      {isAdmin ? (
+        <nav className={styles.group} aria-label="Admin">
+          <span className={styles.groupLabel}>Admin</span>
+          {adminNav.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                `${styles.navLink} ${isActive ? styles.navLinkActive : ''}`
+              }
+              onClick={onClose}
+            >
+              <span className={styles.icon} aria-hidden="true">{item.icon}</span>
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      ) : null}
 
       <div className={styles.footer}>
-        <span>Signed in</span>
-        <button type="button" className={styles.logout}>Log out</button>
+        <span>{user ? user.name : 'Not signed in'}</span>
+        <button type="button" className={styles.logout} onClick={handleLogout}>
+          Log out
+        </button>
       </div>
     </aside>
   );
