@@ -292,34 +292,48 @@ export default function AddPurchasePage() {
           apiKeyMissing ? 'opacity-60' : ''
         }`}
       >
-        <label className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm font-medium text-slate-200">
-            Scan a receipt
-          </span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,application/pdf"
-            onChange={handleReceiptChange}
-            disabled={isScanning || isSaving}
-            className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-hover disabled:opacity-60 sm:w-auto"
-          />
-        </label>
-        {isScanning ? (
-          <p className="mt-3 flex items-center gap-2 text-sm text-brand-hover">
-            <span
-              aria-hidden="true"
-              className="h-4 w-4 animate-spin rounded-full border-2 border-brand/40 border-t-brand-hover"
-            />
-            Scanning receipt…
-          </p>
-        ) : scanNotice ? (
+        {/* Hidden real file input — triggered by the button below */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,application/pdf"
+          onChange={handleReceiptChange}
+          disabled={isScanning || isSaving}
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+        />
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium text-slate-200">Scan a receipt</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Accepts photos or PDF — store, amount and date are filled in automatically.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={isScanning || isSaving || apiKeyMissing}
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex shrink-0 items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover disabled:opacity-60"
+          >
+            {isScanning ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                />
+                Scanning…
+              </>
+            ) : (
+              'Upload & Scan'
+            )}
+          </button>
+        </div>
+
+        {!isScanning && scanNotice ? (
           <p className="mt-3 text-sm text-slate-300">{scanNotice}</p>
-        ) : (
-          <p className="mt-3 text-xs text-slate-500">
-            We&apos;ll extract the store, amount, and date. You can always edit them below.
-          </p>
-        )}
+        ) : null}
       </section>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
