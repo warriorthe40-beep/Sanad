@@ -6,8 +6,9 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { scanReceipt } from '@/application/receiptScanner';
+import { Link, useNavigate } from 'react-router-dom';
+import { MissingApiKeyError, scanReceipt } from '@/application/receiptScanner';
+import { hasApiKey } from '@/services/settings/apiKey';
 import { getSuggestion, updateFromUser, type Suggestion } from '@/application/suggestions';
 import { calculateWarrantyEndDate, scheduleAlerts } from '@/application/warranty';
 import { validatePurchase, type PurchaseValidationErrors } from '@/application/validation';
@@ -73,6 +74,7 @@ export default function AddPurchasePage() {
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [apiKeyMissing, setApiKeyMissing] = useState<boolean>(() => !hasApiKey());
 
   // Steps 7–8: re-fetch the community suggestion whenever the
   // (store, category) pair becomes complete.
@@ -116,6 +118,12 @@ export default function AddPurchasePage() {
   async function handleReceiptChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (!hasApiKey()) {
+      setApiKeyMissing(true);
+      setScanNotice(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     setIsScanning(true);
     setScanNotice(null);
     try {
@@ -129,8 +137,16 @@ export default function AddPurchasePage() {
       setScanNotice(
         `Extracted ${data.storeName} · ${data.amount} SAR · ${toISODate(data.date)}.`
       );
-    } catch {
-      setScanNotice('Could not read that receipt. Please enter the details manually.');
+    } catch (err) {
+      if (err instanceof MissingApiKeyError) {
+        setApiKeyMissing(true);
+      } else {
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Could not read that receipt. Please enter the details manually.';
+        setScanNotice(message);
+      }
     } finally {
       setIsScanning(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -230,7 +246,29 @@ export default function AddPurchasePage() {
         </p>
       </header>
 
-      <section className="mb-6 rounded-xl border border-dashed border-brand/60 bg-brand-soft/40 p-4">
+      {apiKeyMissing ? (
+        <div className="mb-4 flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-semibold">Receipt scanning is off.</p>
+            <p className="mt-0.5 text-xs text-amber-800">
+              Add your Anthropic API key in Settings to auto-fill the store, amount,
+              and date from a photo.
+            </p>
+          </div>
+          <Link
+            to="/settings"
+            className="inline-flex shrink-0 justify-center rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+          >
+            Open Settings
+          </Link>
+        </div>
+      ) : null}
+
+      <section
+        className={`mb-6 rounded-xl border border-dashed border-brand/60 bg-brand-soft/40 p-4 ${
+          apiKeyMissing ? 'opacity-60' : ''
+        }`}
+      >
         <label className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm font-medium text-slate-800">
             Scan a receipt
@@ -239,7 +277,6 @@ export default function AddPurchasePage() {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={handleReceiptChange}
             disabled={isScanning || isSaving}
             className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-hover disabled:opacity-60 sm:w-auto"
