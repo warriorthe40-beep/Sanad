@@ -140,7 +140,7 @@ export default function AddPurchasePage() {
         ...prev,
         storeName: prev.storeName || data.storeName,
         price: prev.price || String(data.amount),
-        purchaseDate: prev.purchaseDate || toISODate(data.date),
+        purchaseDate: toISODate(data.date),
       }));
       setScanNotice(
         `Extracted ${data.storeName} · ${data.amount} SAR · ${toISODate(data.date)}.`
