@@ -153,7 +153,6 @@ const RADIAN = Math.PI / 180;
 
 function PiePercentLabel(props: Record<string, unknown>) {
   const percent = props.percent as number;
-  if (percent < 0.05) return null;
   const cx = props.cx as number;
   const cy = props.cy as number;
   const midAngle = props.midAngle as number;
