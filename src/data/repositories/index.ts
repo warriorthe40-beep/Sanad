@@ -5,6 +5,7 @@ import { StorePolicyRepository } from './StorePolicyRepository';
 import { CategoryRepository } from './CategoryRepository';
 import { AlertRepository } from './AlertRepository';
 import { ClaimRepository } from './ClaimRepository';
+import { DocumentRepository } from './DocumentRepository';
 
 export type { Entity, Repository } from './Repository';
 export { BaseRepository } from './BaseRepository';
@@ -14,6 +15,7 @@ export { StorePolicyRepository } from './StorePolicyRepository';
 export { CategoryRepository } from './CategoryRepository';
 export { AlertRepository } from './AlertRepository';
 export { ClaimRepository } from './ClaimRepository';
+export { DocumentRepository } from './DocumentRepository';
 
 /**
  * Default repository singletons wired to `defaultStorageAdapter`.
@@ -27,3 +29,4 @@ export const storePolicyRepository = new StorePolicyRepository(defaultStorageAda
 export const categoryRepository = new CategoryRepository(defaultStorageAdapter);
 export const alertRepository = new AlertRepository(defaultStorageAdapter);
 export const claimRepository = new ClaimRepository(defaultStorageAdapter);
+export const documentRepository = new DocumentRepository(defaultStorageAdapter);
