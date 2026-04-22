@@ -239,7 +239,6 @@ export default function AddPurchasePage() {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={handleReceiptChange}
             disabled={isScanning || isSaving}
             className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-hover disabled:opacity-60 sm:w-auto"
