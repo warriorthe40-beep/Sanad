@@ -2,6 +2,20 @@ import type { Purchase } from '@/data/models';
 
 export type TimeRange = 'today' | 'month' | 'year' | 'all';
 
+/** Filter purchases whose purchaseDate falls within [start, end] inclusive. */
+export function filterByDateRange(
+  purchases: readonly Purchase[],
+  start: Date,
+  end: Date
+): Purchase[] {
+  const s = start.getTime();
+  const e = end.getTime();
+  return purchases.filter((p) => {
+    const t = p.purchaseDate.getTime();
+    return t >= s && t <= e;
+  });
+}
+
 /**
  * Filter purchases to those whose `purchaseDate` falls within the given
  * named range, measured from `now`:
