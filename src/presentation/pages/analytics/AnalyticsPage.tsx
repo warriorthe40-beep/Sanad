@@ -473,11 +473,15 @@ function SpendingAreaChart({
   granularity: TrendGranularity;
 }) {
   const interval = xInterval(granularity, points.length);
+  const rotate = granularity !== 'hour' && points.length > MAX_X_TICKS;
 
   return (
     <div className="mt-4 h-72">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={points} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <AreaChart
+          data={points}
+          margin={{ top: 10, right: 10, left: 0, bottom: rotate ? 40 : 0 }}
+        >
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#a80000" stopOpacity={0.35} />
@@ -488,10 +492,16 @@ function SpendingAreaChart({
           <XAxis
             dataKey="label"
             stroke="#94a3b8"
-            tick={{ fill: '#94a3b8', fontSize: 11 }}
+            tick={{
+              fill: '#94a3b8',
+              fontSize: 11,
+              ...(rotate && { textAnchor: 'end' }),
+            }}
             axisLine={{ stroke: '#2f2f36' }}
             tickLine={{ stroke: '#2f2f36' }}
             interval={interval}
+            angle={rotate ? -45 : 0}
+            dy={rotate ? 4 : 0}
           />
           <YAxis
             stroke="#94a3b8"
