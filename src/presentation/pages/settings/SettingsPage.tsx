@@ -1,0 +1,178 @@
+import { useState, type FormEvent } from 'react';
+import {
+  clearApiKey,
+  getApiKey,
+  maskApiKey,
+  setApiKey,
+} from '@/services/settings/apiKey';
+
+/**
+ * SettingsPage — user-managed configuration.
+ *
+ * The only setting for now is the Anthropic API key that powers the
+ * AI Receipt Scanning feature. The key is stored in localStorage and
+ * used by the browser-side Anthropic SDK client; this page discloses
+ * that tradeoff so the user can make an informed decision about the
+ * security boundary.
+ */
+export default function SettingsPage() {
+  const [savedKey, setSavedKey] = useState<string | null>(() => getApiKey());
+  const [draft, setDraft] = useState('');
+  const [feedback, setFeedback] = useState<{
+    kind: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      setFeedback({ kind: 'error', text: 'Please paste a key before saving.' });
+      return;
+    }
+    if (!trimmed.startsWith('sk-ant-')) {
+      setFeedback({
+        kind: 'error',
+        text: 'That doesn’t look like an Anthropic key. It should start with "sk-ant-".',
+      });
+      return;
+    }
+    setApiKey(trimmed);
+    setSavedKey(trimmed);
+    setDraft('');
+    setFeedback({ kind: 'success', text: 'API key saved. You can now scan receipts.' });
+  }
+
+  function handleClear() {
+    clearApiKey();
+    setSavedKey(null);
+    setDraft('');
+    setFeedback({ kind: 'success', text: 'API key removed.' });
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-8">
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">Settings</h1>
+        <p className="mt-1 text-sm text-slate-600">
+          Configure the integrations Sanad uses on your behalf.
+        </p>
+      </header>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">
+              Anthropic API key
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Enables AI receipt scanning on the Add Purchase page. Without a
+              key, you&apos;ll need to type the store, amount, and date yourself.
+            </p>
+          </div>
+          <StatusBadge saved={Boolean(savedKey)} />
+        </div>
+
+        {savedKey ? (
+          <p className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+            {maskApiKey(savedKey)}
+          </p>
+        ) : null}
+
+        <form onSubmit={handleSubmit} className="mt-5 space-y-3">
+          <div>
+            <label
+              htmlFor="apiKey"
+              className="mb-1 block text-sm font-medium text-slate-800"
+            >
+              {savedKey ? 'Replace key' : 'API key'}
+            </label>
+            <input
+              id="apiKey"
+              name="apiKey"
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={draft}
+              onChange={(event) => {
+                setDraft(event.target.value);
+                setFeedback(null);
+              }}
+              placeholder="sk-ant-..."
+              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+            />
+          </div>
+
+          {feedback ? (
+            <p
+              className={
+                feedback.kind === 'success'
+                  ? 'rounded-md border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-800'
+                  : 'rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700'
+              }
+            >
+              {feedback.text}
+            </p>
+          ) : null}
+
+          <div className="flex flex-col gap-2 pt-1 sm:flex-row-reverse">
+            <button
+              type="submit"
+              className="inline-flex justify-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover"
+            >
+              Save key
+            </button>
+            {savedKey ? (
+              <button
+                type="button"
+                onClick={handleClear}
+                className="inline-flex justify-center rounded-md border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+              >
+                Remove saved key
+              </button>
+            ) : null}
+          </div>
+        </form>
+
+        <div className="mt-6 space-y-3 border-t border-slate-100 pt-5 text-sm text-slate-700">
+          <p>
+            <span className="font-semibold text-slate-900">Where do I get one?</span>{' '}
+            Create a key at{' '}
+            <a
+              href="https://console.anthropic.com/settings/keys"
+              target="_blank"
+              rel="noreferrer"
+              className="font-semibold text-brand-hover underline"
+            >
+              console.anthropic.com/settings/keys
+            </a>{' '}
+            and paste it above.
+          </p>
+          <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            <span className="font-semibold">Security note.</span> Sanad is a
+            client-only PWA, so your key is stored in this browser&apos;s
+            localStorage and sent directly to Anthropic from your device. Anyone
+            with access to this machine can read the key from the browser&apos;s
+            devtools. For shared or untrusted devices, leave the scanner disabled
+            and enter purchases manually.
+          </p>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function StatusBadge({ saved }: { saved: boolean }) {
+  if (saved) {
+    return (
+      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-800">
+        <span aria-hidden="true">●</span> Connected
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+      Not configured
+    </span>
+  );
+}

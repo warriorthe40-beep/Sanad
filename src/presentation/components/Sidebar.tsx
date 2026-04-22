@@ -19,6 +19,8 @@ const primaryNav: NavItem[] = [
   { to: '/purchases/new', label: 'Add Purchase', icon: '➕' },
   { to: '/alerts', label: 'Alerts', icon: '🔔' },
   { to: '/analytics', label: 'Analytics', icon: '📊' },
+  { to: '/claims', label: 'Report Issue', icon: '🛠️' },
+  { to: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
 const adminNav: NavItem[] = [

@@ -1,1 +1,1 @@
-export { scanReceipt } from './scanReceipt';
+export { scanReceipt, MissingApiKeyError } from './scanReceipt';

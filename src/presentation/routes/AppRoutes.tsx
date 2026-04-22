@@ -15,6 +15,7 @@ import EditPurchasePage from '@/presentation/pages/purchases/EditPurchase/EditPu
 import AlertsPage from '@/presentation/pages/alerts/AlertsPage';
 import AnalyticsPage from '@/presentation/pages/analytics/AnalyticsPage';
 import ClaimsPage from '@/presentation/pages/claims/ClaimsPage';
+import SettingsPage from '@/presentation/pages/settings/SettingsPage';
 
 import AdminDashboardPage from '@/presentation/pages/admin/AdminDashboardPage';
 import ManageCategoriesPage from '@/presentation/pages/admin/ManageCategories/ManageCategoriesPage';
@@ -54,6 +55,7 @@ export default function AppRoutes() {
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="claims" element={<ClaimsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
 
           <Route element={<RequireAdmin />}>
             <Route path="admin" element={<AdminDashboardPage />} />
