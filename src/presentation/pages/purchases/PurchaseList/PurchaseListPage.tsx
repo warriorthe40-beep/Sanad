@@ -8,19 +8,34 @@ import { formatCurrency, formatDate } from '@/shared/utils/formatting';
 
 const ALL_CATEGORIES = '__all__';
 
+type WarrantyFilter = 'all' | 'active' | 'expiring' | 'expired' | 'none';
+
+const WARRANTY_FILTER_LABELS: Record<WarrantyFilter, string> = {
+  all: 'All warranties',
+  active: 'Active',
+  expiring: 'Expiring soon',
+  expired: 'Expired',
+  none: 'No warranty',
+};
+
 /**
  * PurchaseListPage — the user dashboard. Fetches every purchase owned by the
  * current user from `purchaseRepository`, renders them as a responsive grid
- * of cards, and provides a product-name search + category filter.
+ * of cards, and provides the full blueprint §3.7 filter surface: text
+ * search, category, warranty status (Active / Expiring / Expired /
+ * None), and a custom purchase-date range.
  *
- * A floating Quick Add button on the bottom-right navigates to
- * `/purchases/new/quick` for the "under-30-seconds, no-warranty" flow.
+ * A floating Quick Add button on the bottom-right stays reachable on
+ * mobile for the "under-30-seconds, no-warranty" flow.
  */
 export default function PurchaseListPage() {
   const [purchases, setPurchases] = useState<Purchase[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>(ALL_CATEGORIES);
+  const [warrantyFilter, setWarrantyFilter] = useState<WarrantyFilter>('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -48,6 +63,9 @@ export default function PurchaseListPage() {
     return Array.from(new Set(purchases.map((p) => p.categoryName))).sort();
   }, [purchases]);
 
+  const fromTime = useMemo(() => parseDateBoundary(dateFrom, 'start'), [dateFrom]);
+  const toTime = useMemo(() => parseDateBoundary(dateTo, 'end'), [dateTo]);
+
   const visible = useMemo(() => {
     if (!purchases) return [];
     const needle = query.trim().toLowerCase();
@@ -55,6 +73,13 @@ export default function PurchaseListPage() {
       if (category !== ALL_CATEGORIES && purchase.categoryName !== category) {
         return false;
       }
+      if (warrantyFilter !== 'all') {
+        const status = getWarrantyStatusView(purchase).kind;
+        if (status !== warrantyFilter) return false;
+      }
+      const ts = purchase.purchaseDate.getTime();
+      if (fromTime !== null && ts < fromTime) return false;
+      if (toTime !== null && ts > toTime) return false;
       if (!needle) return true;
       const haystack = [purchase.productName, purchase.storeName, purchase.categoryName]
         .filter(Boolean)
@@ -62,7 +87,22 @@ export default function PurchaseListPage() {
         .toLowerCase();
       return haystack.includes(needle);
     });
-  }, [purchases, query, category]);
+  }, [purchases, query, category, warrantyFilter, fromTime, toTime]);
+
+  const hasActiveFilters =
+    query.trim() !== '' ||
+    category !== ALL_CATEGORIES ||
+    warrantyFilter !== 'all' ||
+    dateFrom !== '' ||
+    dateTo !== '';
+
+  function resetFilters() {
+    setQuery('');
+    setCategory(ALL_CATEGORIES);
+    setWarrantyFilter('all');
+    setDateFrom('');
+    setDateTo('');
+  }
 
   return (
     <div className="relative mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
@@ -83,36 +123,99 @@ export default function PurchaseListPage() {
         </Link>
       </header>
 
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-        <label className="flex-1">
-          <span className="sr-only">Search purchases</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by product, store, or category"
-            className="block w-full rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
-          />
-        </label>
-        <label className="sm:w-56">
-          <span className="sr-only">Filter by category</span>
-          <select
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            className="block w-full rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
-          >
-            <option value={ALL_CATEGORIES}>All categories</option>
-            {categories.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <section
+        aria-label="Filters"
+        className="mb-6 rounded-xl border border-slate-700 bg-surface p-4"
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="lg:col-span-2">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Search
+            </span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Product, store, or category"
+              className={filterInputClass}
+            />
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Category
+            </span>
+            <select
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              className={filterInputClass}
+            >
+              <option value={ALL_CATEGORIES}>All categories</option>
+              {categories.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Warranty
+            </span>
+            <select
+              value={warrantyFilter}
+              onChange={(event) =>
+                setWarrantyFilter(event.target.value as WarrantyFilter)
+              }
+              className={filterInputClass}
+            >
+              {(['all', 'active', 'expiring', 'expired', 'none'] as WarrantyFilter[]).map(
+                (option) => (
+                  <option key={option} value={option}>
+                    {WARRANTY_FILTER_LABELS[option]}
+                  </option>
+                )
+              )}
+            </select>
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              From
+            </span>
+            <input
+              type="date"
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={(event) => setDateFrom(event.target.value)}
+              className={filterInputClass}
+            />
+          </label>
+          <label>
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              To
+            </span>
+            <input
+              type="date"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(event) => setDateTo(event.target.value)}
+              className={filterInputClass}
+            />
+          </label>
+          <div className="flex items-end lg:col-span-2">
+            <button
+              type="button"
+              onClick={resetFilters}
+              disabled={!hasActiveFilters}
+              className="inline-flex h-[38px] w-full items-center justify-center rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-surface-elevated disabled:opacity-50"
+            >
+              Reset filters
+            </button>
+          </div>
+        </div>
+      </section>
 
       {loadError ? (
-        <p className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+        <p className="mb-4 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
           {loadError}
         </p>
       ) : null}
@@ -122,20 +225,38 @@ export default function PurchaseListPage() {
       ) : purchases.length === 0 ? (
         <EmptyState />
       ) : visible.length === 0 ? (
-        <NoMatches onReset={() => { setQuery(''); setCategory(ALL_CATEGORIES); }} />
+        <NoMatches onReset={resetFilters} />
       ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.map((purchase) => (
-            <li key={purchase.id}>
-              <PurchaseCard purchase={purchase} />
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="mb-3 text-xs text-slate-500">
+            Showing {visible.length} of {purchases.length}
+            {hasActiveFilters ? ' (filtered)' : ''}.
+          </p>
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {visible.map((purchase) => (
+              <li key={purchase.id}>
+                <PurchaseCard purchase={purchase} />
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       <QuickAddFab />
     </div>
   );
+}
+
+const filterInputClass =
+  'block w-full rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30';
+
+function parseDateBoundary(value: string, which: 'start' | 'end'): number | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  if (which === 'start') parsed.setHours(0, 0, 0, 0);
+  else parsed.setHours(23, 59, 59, 999);
+  return parsed.getTime();
 }
 
 function PurchaseCard({ purchase }: { purchase: Purchase }) {
@@ -230,7 +351,7 @@ function NoMatches({ onReset }: { onReset: () => void }) {
     <div className="rounded-xl border border-slate-700 bg-surface p-8 text-center">
       <h2 className="text-base font-semibold text-slate-100">Nothing matches</h2>
       <p className="mt-1 text-sm text-slate-400">
-        Try a different search term or category.
+        Try a different search term, category, warranty status, or date range.
       </p>
       <button
         type="button"
