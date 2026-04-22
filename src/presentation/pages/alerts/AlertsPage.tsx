@@ -182,8 +182,15 @@ function AlertCard({
   purchase: Purchase | undefined;
   onMarkRead: () => void;
 }) {
-  const days = daysBetween(new Date(), alert.alertDate);
-  const upcoming = days > 0;
+  const expiryDate = new Date(alert.alertDate);
+  expiryDate.setDate(expiryDate.getDate() + alert.daysBeforeExpiry);
+
+  const daysUntilExpiry = daysBetween(new Date(), expiryDate);
+
+  const itemName = purchase?.productName?.trim() || purchase?.storeName || 'Unknown item';
+  const title =
+    alert.type === 'warranty' ? `${itemName} Warranty` : `${itemName} Return Window`;
+
   const palette = alert.isRead
     ? 'border-slate-700 bg-surface'
     : alert.type === 'warranty'
@@ -209,16 +216,14 @@ function AlertCard({
                 Read
               </span>
             ) : null}
-            <span className="text-xs text-slate-500">
-              {upcoming ? `in ${days} day${days === 1 ? '' : 's'}` : 'due'}
-            </span>
           </div>
-          <p className="mt-1 text-base font-semibold text-slate-400">{alert.message}</p>
+          <p className="mt-1.5 text-base font-semibold text-slate-100">{title}</p>
           <p className="mt-0.5 text-sm text-slate-400">
-            Fires {formatDate(alert.alertDate)}
-            {purchase
-              ? ` · ${purchase.productName?.trim() || purchase.storeName}`
-              : ''}
+            Expires in {daysUntilExpiry} day{daysUntilExpiry === 1 ? '' : 's'}{' '}
+            · {formatDate(expiryDate)}
+          </p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Scheduled for {formatDate(alert.alertDate)}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
