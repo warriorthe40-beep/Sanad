@@ -30,6 +30,6 @@ export const userRepository = new UserRepository(defaultStorageAdapter);
 export const purchaseRepository = new PurchaseRepository();
 export const storePolicyRepository = new StorePolicyRepository();
 export const categoryRepository = new CategoryRepository(defaultStorageAdapter);
-export const alertRepository = new AlertRepository(defaultStorageAdapter);
+export const alertRepository = new AlertRepository();
 export const claimRepository = new ClaimRepository(defaultStorageAdapter);
 export const documentRepository = new DocumentRepository(defaultStorageAdapter);
