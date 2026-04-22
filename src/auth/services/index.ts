@@ -4,8 +4,8 @@ export {
   login,
   logout,
   register,
+  userToAuthUser,
   type AuthUser,
   type LoginInput,
   type RegisterInput,
 } from './authService';
-export { clearSession, getSessionUserId, setSessionUserId } from './session';
