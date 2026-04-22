@@ -7,6 +7,9 @@ import { AlertRepository } from './AlertRepository';
 import { ClaimRepository } from './ClaimRepository';
 import { DocumentRepository } from './DocumentRepository';
 
+// PurchaseRepository and StorePolicyRepository are backed by Supabase.
+// All other repositories still use the local StorageAdapter.
+
 export type { Entity, Repository } from './Repository';
 export { BaseRepository } from './BaseRepository';
 export { UserRepository } from './UserRepository';
@@ -24,8 +27,8 @@ export { DocumentRepository } from './DocumentRepository';
  * the classes above and instantiate them with a different StorageAdapter.
  */
 export const userRepository = new UserRepository(defaultStorageAdapter);
-export const purchaseRepository = new PurchaseRepository(defaultStorageAdapter);
-export const storePolicyRepository = new StorePolicyRepository(defaultStorageAdapter);
+export const purchaseRepository = new PurchaseRepository();
+export const storePolicyRepository = new StorePolicyRepository();
 export const categoryRepository = new CategoryRepository(defaultStorageAdapter);
 export const alertRepository = new AlertRepository(defaultStorageAdapter);
 export const claimRepository = new ClaimRepository(defaultStorageAdapter);
