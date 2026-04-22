@@ -1,8 +1,13 @@
+import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider } from '@/auth/context/AuthContext';
+import AppRoutes from './presentation/routes/AppRoutes';
+
 export default function App() {
   return (
-    <main className="app-placeholder">
-      <h1>Sanad</h1>
-      <p>Warranty &amp; Receipt Organizer</p>
-    </main>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
