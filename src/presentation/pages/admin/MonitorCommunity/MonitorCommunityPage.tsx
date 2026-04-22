@@ -139,10 +139,10 @@ export default function MonitorCommunityPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">
           Monitor community data
         </h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-slate-400">
           Review the community-sourced warranty and return-window data behind
           Add Purchase suggestions. Flag rows that look wrong so they stop
           influencing future suggestions.
@@ -162,7 +162,7 @@ export default function MonitorCommunityPage() {
         <StatCard label="Avg reports" value={summary.avgReports} tone="emerald" />
       </section>
 
-      <div className="mb-4 inline-flex overflow-hidden rounded-md border border-slate-200 bg-white text-sm">
+      <div className="mb-4 inline-flex overflow-hidden rounded-md border border-slate-700 bg-surface text-sm">
         <FilterButton active={filter === 'issues'} onClick={() => setFilter('issues')}>
           Needs attention
         </FilterButton>
@@ -182,18 +182,18 @@ export default function MonitorCommunityPage() {
           {Array.from({ length: 4 }).map((_, index) => (
             <li
               key={index}
-              className="h-24 animate-pulse rounded-xl border border-slate-200 bg-slate-50"
+              className="h-24 animate-pulse rounded-xl border border-slate-700 bg-surface-elevated"
             />
           ))}
         </ul>
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <h2 className="text-lg font-semibold text-slate-900">
+        <div className="rounded-xl border border-dashed border-slate-700 bg-surface p-10 text-center">
+          <h2 className="text-lg font-semibold text-slate-100">
             {filter === 'issues'
               ? 'Nothing to flag'
               : 'No community policies yet'}
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-400">
             {filter === 'issues'
               ? 'Every policy has enough reports and complete data. Switch to All to browse the full list.'
               : 'Policies are created automatically as users add purchases with warranty or return info.'}
@@ -227,7 +227,7 @@ function PolicyCard({
 }) {
   const { policy, quality, issues } = entry;
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+    <div className="rounded-xl border border-slate-700 bg-surface p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -236,15 +236,15 @@ function PolicyCard({
               <IssueChip key={issue} label={issue} />
             ))}
           </div>
-          <p className="mt-1 text-base font-semibold text-slate-900">
+          <p className="mt-1 text-base font-semibold text-slate-100">
             {policy.storeId} · {policy.categoryId}
           </p>
-          <dl className="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-600 sm:grid-cols-3">
+          <dl className="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-400 sm:grid-cols-3">
             <div>
               <dt className="font-semibold uppercase tracking-wide text-slate-500">
                 Warranty
               </dt>
-              <dd className="mt-0.5 text-slate-800">
+              <dd className="mt-0.5 text-slate-200">
                 {policy.typicalWarranty || <span className="text-slate-400">—</span>}
               </dd>
             </div>
@@ -252,7 +252,7 @@ function PolicyCard({
               <dt className="font-semibold uppercase tracking-wide text-slate-500">
                 Return
               </dt>
-              <dd className="mt-0.5 text-slate-800">
+              <dd className="mt-0.5 text-slate-200">
                 {policy.typicalReturnWindow || (
                   <span className="text-slate-400">—</span>
                 )}
@@ -262,7 +262,7 @@ function PolicyCard({
               <dt className="font-semibold uppercase tracking-wide text-slate-500">
                 Reports
               </dt>
-              <dd className="mt-0.5 text-slate-800">{policy.reportCount}</dd>
+              <dd className="mt-0.5 text-slate-200">{policy.reportCount}</dd>
             </div>
           </dl>
         </div>
@@ -271,7 +271,7 @@ function PolicyCard({
             type="button"
             onClick={onFlag}
             disabled={isFlagging}
-            className="inline-flex justify-center rounded-md border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+            className="inline-flex justify-center rounded-md border border-rose-200 bg-surface px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
           >
             {isFlagging ? 'Flagging…' : 'Flag as incorrect'}
           </button>
@@ -299,7 +299,7 @@ function QualityChip({
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${entry.className}`}
     >
       {entry.label}
-      <span className="rounded-full bg-white/60 px-1.5 text-[10px] font-medium">
+      <span className="rounded-full bg-surface/60 px-1.5 text-[10px] font-medium">
         {reportCount}
       </span>
     </span>
@@ -324,7 +324,7 @@ function StatCard({
   tone: 'slate' | 'amber' | 'sky' | 'emerald';
 }) {
   const palette: Record<typeof tone, string> = {
-    slate: 'border-slate-200 bg-white text-slate-900',
+    slate: 'border-slate-700 bg-surface text-slate-100',
     amber: 'border-amber-200 bg-amber-50 text-amber-900',
     sky: 'border-sky-200 bg-sky-50 text-sky-900',
     emerald: 'border-emerald-200 bg-emerald-50 text-emerald-900',
@@ -353,7 +353,7 @@ function FilterButton({
       type="button"
       onClick={onClick}
       className={`px-3 py-1.5 font-medium transition ${
-        active ? 'bg-brand text-white' : 'text-slate-700 hover:bg-slate-50'
+        active ? 'bg-brand text-white' : 'text-slate-300 hover:bg-surface-elevated'
       }`}
     >
       {children}

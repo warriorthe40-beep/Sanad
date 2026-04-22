@@ -54,23 +54,23 @@ export default function ImageZoomModal({
           alt={alt}
           onClick={cycleZoom}
           style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
-          className="block max-h-[85vh] max-w-[90vw] cursor-zoom-in rounded-md bg-white shadow-xl transition-transform duration-150"
+          className="block max-h-[85vh] max-w-[90vw] cursor-zoom-in rounded-md bg-surface shadow-xl transition-transform duration-150"
         />
       </div>
       <div className="absolute right-4 top-4 flex items-center gap-2">
-        <span className="rounded-md bg-white/90 px-2 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+        <span className="rounded-md bg-surface/90 px-2 py-1 text-xs font-semibold text-slate-300 shadow-sm">
           {zoom}×
         </span>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close viewer"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-md hover:bg-slate-100"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface text-slate-300 shadow-md hover:bg-surface-muted"
         >
           ✕
         </button>
       </div>
-      <p className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm">
+      <p className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-surface/90 px-3 py-1 text-xs font-medium text-slate-300 shadow-sm">
         Tap the image to zoom · Esc to close
       </p>
     </div>

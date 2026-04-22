@@ -169,17 +169,17 @@ export default function ManageStorePoliciesPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">
           Manage store policies
         </h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-slate-400">
           Baseline warranty and return windows per (store, category). These seed
           the community suggestions users see in Add Purchase.
         </p>
       </header>
 
-      <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
-        <h2 className="text-base font-semibold text-slate-900">Add a policy</h2>
+      <section className="mb-6 rounded-xl border border-slate-700 bg-surface p-4 sm:p-6">
+        <h2 className="text-base font-semibold text-slate-100">Add a policy</h2>
         <form
           onSubmit={handleCreate}
           className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2"
@@ -237,7 +237,7 @@ export default function ManageStorePoliciesPage() {
           value={filter}
           onChange={(event) => setFilter(event.target.value)}
           placeholder="Filter by store or category"
-          className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 sm:max-w-sm"
+          className="block w-full rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 sm:max-w-sm"
         />
       </div>
 
@@ -247,21 +247,21 @@ export default function ManageStorePoliciesPage() {
         </p>
       ) : null}
 
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <section className="overflow-hidden rounded-xl border border-slate-700 bg-surface">
         {policies === null ? (
           <TableSkeleton />
         ) : policies.length === 0 ? (
-          <p className="p-8 text-center text-sm text-slate-600">
+          <p className="p-8 text-center text-sm text-slate-400">
             No policies yet. Add the first one above.
           </p>
         ) : visible.length === 0 ? (
-          <p className="p-8 text-center text-sm text-slate-600">
+          <p className="p-8 text-center text-sm text-slate-400">
             Nothing matches that filter.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-100 text-sm">
-              <thead className="bg-slate-50 text-left">
+              <thead className="bg-surface-elevated text-left">
                 <tr className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-3">Store</th>
                   <th className="px-4 py-3">Category</th>
@@ -334,7 +334,7 @@ export default function ManageStorePoliciesPage() {
                             <button
                               type="button"
                               onClick={cancelEdit}
-                              className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              className="inline-flex rounded-md border border-slate-700 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-surface-elevated"
                             >
                               Cancel
                             </button>
@@ -345,14 +345,14 @@ export default function ManageStorePoliciesPage() {
                   }
                   return (
                     <tr key={policy.id}>
-                      <td className="px-4 py-3 font-medium text-slate-900">
+                      <td className="px-4 py-3 font-medium text-slate-100">
                         {policy.storeId}
                       </td>
-                      <td className="px-4 py-3 text-slate-700">{policy.categoryId}</td>
-                      <td className="px-4 py-3 text-slate-700">
+                      <td className="px-4 py-3 text-slate-300">{policy.categoryId}</td>
+                      <td className="px-4 py-3 text-slate-300">
                         {policy.typicalWarranty || <span className="text-slate-400">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-slate-700">
+                      <td className="px-4 py-3 text-slate-300">
                         {policy.typicalReturnWindow || (
                           <span className="text-slate-400">—</span>
                         )}
@@ -363,14 +363,14 @@ export default function ManageStorePoliciesPage() {
                           <button
                             type="button"
                             onClick={() => beginEdit(policy)}
-                            className="inline-flex rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            className="inline-flex rounded-md border border-slate-700 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-surface-elevated"
                           >
                             Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDelete(policy)}
-                            className="inline-flex rounded-md border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                            className="inline-flex rounded-md border border-rose-200 bg-surface px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
                           >
                             Delete
                           </button>
@@ -417,14 +417,14 @@ function LabeledInput({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-800">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-slate-200">{label}</span>
       <input
         name={name}
         value={value}
         onChange={onChange}
         disabled={disabled}
         placeholder={placeholder}
-        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:bg-slate-50"
+        className="block w-full rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:bg-surface-elevated"
       />
     </label>
   );
@@ -441,7 +441,7 @@ function CellInput({
     <input
       value={value}
       onChange={onChange}
-      className="block w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+      className="block w-full rounded-md border border-slate-700 bg-surface px-2 py-1 text-sm text-slate-100 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
     />
   );
 }
@@ -450,7 +450,7 @@ function TableSkeleton() {
   return (
     <div className="divide-y divide-slate-100">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="h-14 animate-pulse bg-slate-50/60" />
+        <div key={index} className="h-14 animate-pulse bg-surface-elevated/60" />
       ))}
     </div>
   );

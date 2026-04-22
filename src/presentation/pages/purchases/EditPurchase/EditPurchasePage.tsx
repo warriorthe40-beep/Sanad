@@ -10,6 +10,12 @@ import { alertRepository, purchaseRepository } from '@/data/repositories';
 import { calculateWarrantyEndDate, scheduleAlerts } from '@/application/warranty';
 import { validatePurchase, type PurchaseValidationErrors } from '@/application/validation';
 import { DEFAULT_CATEGORIES } from '@/shared/constants/categories';
+import DurationOrEndDateField, {
+  fromPurchase,
+  toDurationString,
+  toEndDate,
+  type DurationOrEndDateValue,
+} from '@/presentation/components/DurationOrEndDateField';
 
 /**
  * EditPurchasePage — blueprint §3.5 ("edit any existing purchase,
@@ -28,8 +34,6 @@ interface FormState {
   categoryName: string;
   price: string;
   purchaseDate: string;
-  warrantyDuration: string;
-  returnWindow: string;
   notes: string;
 }
 
@@ -47,8 +51,6 @@ function purchaseToForm(p: Purchase): FormState {
     categoryName: p.categoryName,
     price: String(p.price),
     purchaseDate: toISODate(p.purchaseDate),
-    warrantyDuration: p.warrantyDuration ?? '',
-    returnWindow: p.returnWindow ?? '',
     notes: p.notes ?? '',
   };
 }
@@ -59,6 +61,10 @@ export default function EditPurchasePage() {
 
   const [purchase, setPurchase] = useState<Purchase | null | undefined>(undefined);
   const [form, setForm] = useState<FormState | null>(null);
+  const [warranty, setWarranty] = useState<DurationOrEndDateValue>({ mode: 'none' });
+  const [returnWindow, setReturnWindow] = useState<DurationOrEndDateValue>({
+    mode: 'none',
+  });
   const [errors, setErrors] = useState<PurchaseValidationErrors>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -75,7 +81,15 @@ export default function EditPurchasePage() {
       .then((item) => {
         if (cancelled) return;
         setPurchase(item);
-        if (item) setForm(purchaseToForm(item));
+        if (item) {
+          setForm(purchaseToForm(item));
+          setWarranty(
+            fromPurchase(item.warrantyDuration, item.warrantyEndDate, 'years')
+          );
+          setReturnWindow(
+            fromPurchase(item.returnWindow, item.returnEndDate, 'days')
+          );
+        }
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -102,14 +116,16 @@ export default function EditPurchasePage() {
 
     const purchaseDate = new Date(form.purchaseDate);
     const price = Number.parseFloat(form.price);
+    const warrantyDuration = toDurationString(warranty);
+    const returnDuration = toDurationString(returnWindow);
     const draft = {
       productName: form.productName.trim() || undefined,
       storeName: form.storeName.trim(),
       categoryName: form.categoryName.trim(),
       price: Number.isNaN(price) ? undefined : price,
       purchaseDate: Number.isNaN(purchaseDate.getTime()) ? undefined : purchaseDate,
-      warrantyDuration: form.warrantyDuration.trim() || undefined,
-      returnWindow: form.returnWindow.trim() || undefined,
+      warrantyDuration,
+      returnWindow: returnDuration,
       notes: form.notes.trim() || undefined,
     };
 
@@ -122,10 +138,16 @@ export default function EditPurchasePage() {
     setIsSaving(true);
     setSaveError(null);
     try {
-      const warrantyEndDate =
-        calculateWarrantyEndDate(draft.purchaseDate!, draft.warrantyDuration) ?? undefined;
-      const returnEndDate =
-        calculateWarrantyEndDate(draft.purchaseDate!, draft.returnWindow) ?? undefined;
+      const warrantyEndDate = toEndDate(
+        warranty,
+        draft.purchaseDate!,
+        calculateWarrantyEndDate
+      );
+      const returnEndDate = toEndDate(
+        returnWindow,
+        draft.purchaseDate!,
+        calculateWarrantyEndDate
+      );
 
       await purchaseRepository.update(purchase.id, {
         productName: draft.productName,
@@ -169,7 +191,7 @@ export default function EditPurchasePage() {
   if (purchase === undefined) {
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-8">
-        <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
+        <div className="h-40 animate-pulse rounded-xl bg-surface-muted" />
       </div>
     );
   }
@@ -177,14 +199,14 @@ export default function EditPurchasePage() {
   if (purchase === null || !form) {
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-8">
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-          <h1 className="text-lg font-semibold text-slate-900">Purchase not found</h1>
-          <p className="mt-1 text-sm text-slate-600">
+        <div className="rounded-xl border border-slate-700 bg-surface p-8 text-center">
+          <h1 className="text-lg font-semibold text-slate-100">Purchase not found</h1>
+          <p className="mt-1 text-sm text-slate-400">
             {loadError ?? 'This purchase may have been deleted.'}
           </p>
           <Link
             to="/purchases"
-            className="mt-4 inline-flex rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="mt-4 inline-flex rounded-md border border-slate-700 bg-surface px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-surface-elevated"
           >
             Back to purchases
           </Link>
@@ -202,10 +224,10 @@ export default function EditPurchasePage() {
       </nav>
 
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">
           Edit purchase
         </h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-slate-400">
           Update any field. Changing warranty or return windows reschedules the
           reminder alerts.
         </p>
@@ -234,7 +256,7 @@ export default function EditPurchasePage() {
         <div>
           <label
             htmlFor="categoryName"
-            className="mb-1 block text-sm font-medium text-slate-800"
+            className="mb-1 block text-sm font-medium text-slate-200"
           >
             Category <span className="text-rose-600">*</span>
           </label>
@@ -285,30 +307,40 @@ export default function EditPurchasePage() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field
-            label="Warranty duration"
-            name="warrantyDuration"
-            value={form.warrantyDuration}
-            onChange={handleChange}
+          <DurationOrEndDateField
+            label="Warranty"
+            idPrefix="warranty"
+            value={warranty}
+            onChange={(next) => {
+              setWarranty(next);
+              setErrors((prev) => ({ ...prev, warrantyDuration: undefined }));
+              setSaveError(null);
+            }}
+            minDate={form.purchaseDate}
             disabled={isSaving}
             error={errors.warrantyDuration}
-            placeholder="e.g. 1 year"
+            defaultUnit="years"
           />
-          <Field
+          <DurationOrEndDateField
             label="Return window"
-            name="returnWindow"
-            value={form.returnWindow}
-            onChange={handleChange}
+            idPrefix="return"
+            value={returnWindow}
+            onChange={(next) => {
+              setReturnWindow(next);
+              setErrors((prev) => ({ ...prev, returnWindow: undefined }));
+              setSaveError(null);
+            }}
+            minDate={form.purchaseDate}
             disabled={isSaving}
             error={errors.returnWindow}
-            placeholder="e.g. 14 days"
+            defaultUnit="days"
           />
         </div>
 
         <div>
           <label
             htmlFor="notes"
-            className="mb-1 block text-sm font-medium text-slate-800"
+            className="mb-1 block text-sm font-medium text-slate-200"
           >
             Notes
           </label>
@@ -341,7 +373,7 @@ export default function EditPurchasePage() {
             type="button"
             onClick={() => navigate(-1)}
             disabled={isSaving}
-            className="inline-flex justify-center rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className="inline-flex justify-center rounded-md border border-slate-700 bg-surface px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-surface-elevated disabled:opacity-60"
           >
             Cancel
           </button>
@@ -384,7 +416,7 @@ function Field({
 }: FieldProps) {
   return (
     <div>
-      <label htmlFor={name} className="mb-1 block text-sm font-medium text-slate-800">
+      <label htmlFor={name} className="mb-1 block text-sm font-medium text-slate-200">
         {label}
         {required ? <span className="text-rose-600"> *</span> : null}
       </label>
@@ -408,10 +440,10 @@ function Field({
 
 function inputClass(hasError: boolean): string {
   const base =
-    'block w-full rounded-md border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-slate-50';
+    'block w-full rounded-md border bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-surface-elevated';
   return `${base} ${
     hasError
       ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200'
-      : 'border-slate-300 focus:border-brand focus:ring-brand/30'
+      : 'border-slate-700 focus:border-brand focus:ring-brand/30'
   }`;
 }

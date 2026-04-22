@@ -124,14 +124,14 @@ export default function PurchaseDetailsPage() {
   if (purchase === null) {
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-8">
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-          <h1 className="text-lg font-semibold text-slate-900">Purchase not found</h1>
-          <p className="mt-1 text-sm text-slate-600">
+        <div className="rounded-xl border border-slate-700 bg-surface p-8 text-center">
+          <h1 className="text-lg font-semibold text-slate-100">Purchase not found</h1>
+          <p className="mt-1 text-sm text-slate-400">
             {loadError ?? 'This purchase may have been deleted.'}
           </p>
           <Link
             to="/purchases"
-            className="mt-4 inline-flex rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="mt-4 inline-flex rounded-md border border-slate-700 bg-surface px-3 py-1.5 text-sm font-semibold text-slate-300 hover:bg-surface-elevated"
           >
             Back to purchases
           </Link>
@@ -154,12 +154,12 @@ export default function PurchaseDetailsPage() {
 
       <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{title}</h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">{title}</h1>
+          <p className="mt-1 text-sm text-slate-400">
             {purchase.storeName} · {purchase.categoryName}
           </p>
         </div>
-        <p className="text-2xl font-semibold text-slate-900">
+        <p className="text-2xl font-semibold text-slate-100">
           {formatCurrency(purchase.price)}
         </p>
       </header>
@@ -169,8 +169,8 @@ export default function PurchaseDetailsPage() {
         <CountdownCard title="Return window" status={returnWindow} />
       </section>
 
-      <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
-        <h2 className="text-base font-semibold text-slate-900">Details</h2>
+      <section className="mb-6 rounded-xl border border-slate-700 bg-surface p-4 sm:p-6">
+        <h2 className="text-base font-semibold text-slate-100">Details</h2>
         <dl className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
           <Info label="Purchase date" value={formatDate(purchase.purchaseDate)} />
           <Info label="Store" value={purchase.storeName} />
@@ -190,24 +190,24 @@ export default function PurchaseDetailsPage() {
           ) : null}
         </dl>
         {purchase.notes ? (
-          <div className="mt-5 border-t border-slate-100 pt-4">
+          <div className="mt-5 border-t border-slate-700 pt-4">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Notes
             </h3>
-            <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">
+            <p className="mt-2 whitespace-pre-wrap text-sm text-slate-200">
               {purchase.notes}
             </p>
           </div>
         ) : null}
       </section>
 
-      <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+      <section className="mb-6 rounded-xl border border-slate-700 bg-surface p-4 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-base font-semibold text-slate-900">Documents</h2>
+          <h2 className="text-base font-semibold text-slate-100">Documents</h2>
           <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
             <label
               htmlFor="documentType"
-              className="text-xs font-medium text-slate-600 sm:mr-1"
+              className="text-xs font-medium text-slate-400 sm:mr-1"
             >
               Type
             </label>
@@ -216,7 +216,7 @@ export default function PurchaseDetailsPage() {
               value={uploadType}
               onChange={(event) => setUploadType(event.target.value as DocumentType)}
               disabled={isUploading}
-              className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+              className="rounded-md border border-slate-700 bg-surface px-2 py-1.5 text-xs font-medium text-slate-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
             >
               <option value="receipt">Receipt</option>
               <option value="warranty_card">Warranty card</option>
@@ -249,12 +249,12 @@ export default function PurchaseDetailsPage() {
             {Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={index}
-                className="h-28 animate-pulse rounded-lg bg-slate-100"
+                className="h-28 animate-pulse rounded-lg bg-surface-muted"
               />
             ))}
           </div>
         ) : documents.length === 0 ? (
-          <p className="mt-4 rounded-md border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-600">
+          <p className="mt-4 rounded-md border border-dashed border-slate-700 bg-surface-elevated p-6 text-center text-sm text-slate-400">
             No documents yet. Attach a receipt, warranty card, or invoice photo.
           </p>
         ) : (
@@ -262,7 +262,7 @@ export default function PurchaseDetailsPage() {
             {documents.map((doc) => (
               <li
                 key={doc.id}
-                className="group relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                className="group relative overflow-hidden rounded-lg border border-slate-700 bg-surface-elevated"
               >
                 <button
                   type="button"
@@ -278,7 +278,7 @@ export default function PurchaseDetailsPage() {
                 </button>
                 <div className="flex items-center justify-between px-2 py-1.5 text-xs">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-slate-800">
+                    <p className="truncate font-semibold text-slate-200">
                       {DOCUMENT_TYPE_LABEL[doc.type]}
                     </p>
                     <p className="truncate text-[10px] text-slate-500">
@@ -305,13 +305,13 @@ export default function PurchaseDetailsPage() {
           type="button"
           onClick={handleDelete}
           disabled={isDeleting}
-          className="inline-flex justify-center rounded-md border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+          className="inline-flex justify-center rounded-md border border-rose-200 bg-surface px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
         >
           {isDeleting ? 'Deleting…' : 'Delete'}
         </button>
         <Link
           to={`/purchases/${purchase.id}/edit`}
-          className="inline-flex justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="inline-flex justify-center rounded-md border border-slate-700 bg-surface px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-surface-elevated"
         >
           Edit
         </Link>
@@ -356,7 +356,7 @@ function CountdownCard({
   status: WarrantyStatusView;
 }) {
   const palette: Record<WarrantyStatusView['kind'], string> = {
-    none: 'border-slate-200 bg-slate-50 text-slate-600',
+    none: 'border-slate-700 bg-surface-elevated text-slate-400',
     active: 'border-emerald-200 bg-emerald-50 text-emerald-900',
     expiring: 'border-amber-200 bg-amber-50 text-amber-900',
     expired: 'border-rose-200 bg-rose-50 text-rose-900',
@@ -376,7 +376,7 @@ function Info({ label, value }: { label: string; value: string }) {
       <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </dt>
-      <dd className="mt-0.5 text-slate-900">{value}</dd>
+      <dd className="mt-0.5 text-slate-100">{value}</dd>
     </div>
   );
 }
@@ -387,10 +387,10 @@ function DetailsSkeleton() {
       <div className="mb-4 h-4 w-32 animate-pulse rounded bg-slate-200" />
       <div className="mb-6 h-8 w-64 animate-pulse rounded bg-slate-200" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="h-28 animate-pulse rounded-xl bg-slate-100" />
-        <div className="h-28 animate-pulse rounded-xl bg-slate-100" />
+        <div className="h-28 animate-pulse rounded-xl bg-surface-muted" />
+        <div className="h-28 animate-pulse rounded-xl bg-surface-muted" />
       </div>
-      <div className="mt-4 h-48 animate-pulse rounded-xl bg-slate-100" />
+      <div className="mt-4 h-48 animate-pulse rounded-xl bg-surface-muted" />
     </div>
   );
 }

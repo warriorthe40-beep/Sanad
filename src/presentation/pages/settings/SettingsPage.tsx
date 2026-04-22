@@ -53,19 +53,19 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">Settings</h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">Settings</h1>
+        <p className="mt-1 text-sm text-slate-400">
           Configure the integrations Sanad uses on your behalf.
         </p>
       </header>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+      <section className="rounded-xl border border-slate-700 bg-surface p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">
+            <h2 className="text-base font-semibold text-slate-100">
               Anthropic API key
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-slate-400">
               Enables AI receipt scanning on the Add Purchase page. Without a
               key, you&apos;ll need to type the store, amount, and date yourself.
             </p>
@@ -74,7 +74,7 @@ export default function SettingsPage() {
         </div>
 
         {savedKey ? (
-          <p className="mt-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+          <p className="mt-4 rounded-md border border-slate-700 bg-surface-elevated px-3 py-2 font-mono text-xs text-slate-300">
             {maskApiKey(savedKey)}
           </p>
         ) : null}
@@ -83,7 +83,7 @@ export default function SettingsPage() {
           <div>
             <label
               htmlFor="apiKey"
-              className="mb-1 block text-sm font-medium text-slate-800"
+              className="mb-1 block text-sm font-medium text-slate-200"
             >
               {savedKey ? 'Replace key' : 'API key'}
             </label>
@@ -99,7 +99,7 @@ export default function SettingsPage() {
                 setFeedback(null);
               }}
               placeholder="sk-ant-..."
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+              className="block w-full rounded-md border border-slate-700 bg-surface px-3 py-2 font-mono text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
             />
           </div>
 
@@ -126,7 +126,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={handleClear}
-                className="inline-flex justify-center rounded-md border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
+                className="inline-flex justify-center rounded-md border border-rose-200 bg-surface px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50"
               >
                 Remove saved key
               </button>
@@ -134,9 +134,9 @@ export default function SettingsPage() {
           </div>
         </form>
 
-        <div className="mt-6 space-y-3 border-t border-slate-100 pt-5 text-sm text-slate-700">
+        <div className="mt-6 space-y-3 border-t border-slate-700 pt-5 text-sm text-slate-300">
           <p>
-            <span className="font-semibold text-slate-900">Where do I get one?</span>{' '}
+            <span className="font-semibold text-slate-100">Where do I get one?</span>{' '}
             Create a key at{' '}
             <a
               href="https://console.anthropic.com/settings/keys"
@@ -171,7 +171,7 @@ function StatusBadge({ saved }: { saved: boolean }) {
     );
   }
   return (
-    <span className="inline-flex shrink-0 items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+    <span className="inline-flex shrink-0 items-center rounded-full bg-surface-muted px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
       Not configured
     </span>
   );

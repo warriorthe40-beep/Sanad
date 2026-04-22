@@ -83,10 +83,10 @@ export default function QuickAddPage() {
   return (
     <div className="mx-auto w-full max-w-md px-4 py-6 sm:py-10">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">
           Quick add
         </h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-slate-400">
           Three fields. Dated today. For everyday purchases with no warranty to track.
         </p>
       </header>
@@ -95,7 +95,7 @@ export default function QuickAddPage() {
         <div>
           <label
             htmlFor="storeName"
-            className="mb-1 block text-sm font-medium text-slate-800"
+            className="mb-1 block text-sm font-medium text-slate-200"
           >
             Store <span className="text-rose-600">*</span>
           </label>
@@ -118,7 +118,7 @@ export default function QuickAddPage() {
         <div>
           <label
             htmlFor="categoryName"
-            className="mb-1 block text-sm font-medium text-slate-800"
+            className="mb-1 block text-sm font-medium text-slate-200"
           >
             Category <span className="text-rose-600">*</span>
           </label>
@@ -145,7 +145,7 @@ export default function QuickAddPage() {
         <div>
           <label
             htmlFor="price"
-            className="mb-1 block text-sm font-medium text-slate-800"
+            className="mb-1 block text-sm font-medium text-slate-200"
           >
             Price (SAR) <span className="text-rose-600">*</span>
           </label>
@@ -185,7 +185,7 @@ export default function QuickAddPage() {
             type="button"
             onClick={() => navigate(-1)}
             disabled={isSaving}
-            className="inline-flex justify-center rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className="inline-flex justify-center rounded-md border border-slate-700 bg-surface px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-surface-elevated disabled:opacity-60"
           >
             Cancel
           </button>
@@ -197,10 +197,10 @@ export default function QuickAddPage() {
 
 function inputClass(hasError: boolean): string {
   const base =
-    'block w-full rounded-md border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-slate-50';
+    'block w-full rounded-md border bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-surface-elevated';
   return `${base} ${
     hasError
       ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200'
-      : 'border-slate-300 focus:border-brand focus:ring-brand/30'
+      : 'border-slate-700 focus:border-brand focus:ring-brand/30'
   }`;
 }

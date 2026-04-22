@@ -50,10 +50,10 @@ export default function AnalyticsPage() {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:py-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">
           Spending analytics
         </h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-slate-400">
           Totals, category breakdown, and warranty coverage across your purchases.
         </p>
       </header>
@@ -88,9 +88,9 @@ export default function AnalyticsPage() {
             />
           </section>
 
-          <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+          <section className="mb-6 rounded-xl border border-slate-700 bg-surface p-4 sm:p-6">
             <div className="mb-4 flex items-baseline justify-between">
-              <h2 className="text-base font-semibold text-slate-900">
+              <h2 className="text-base font-semibold text-slate-100">
                 Spending by category
               </h2>
               <p className="text-xs text-slate-500">
@@ -100,8 +100,8 @@ export default function AnalyticsPage() {
             <CategoryBars rows={categoryRows} total={summary.totalSpending} />
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
-            <h2 className="text-base font-semibold text-slate-900">Warranty coverage</h2>
+          <section className="rounded-xl border border-slate-700 bg-surface p-4 sm:p-6">
+            <h2 className="text-base font-semibold text-slate-100">Warranty coverage</h2>
             <CoverageBar fraction={summary.warrantyCoverage} />
             <p className="mt-2 text-xs text-slate-500">
               Purchases with a recorded warranty end date count as covered.
@@ -123,11 +123,11 @@ function StatCard({
   sublabel: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <div className="rounded-xl border border-slate-700 bg-surface p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
+      <p className="mt-1 text-2xl font-semibold text-slate-100">{value}</p>
       <p className="mt-1 text-xs text-slate-500">{sublabel}</p>
     </div>
   );
@@ -140,7 +140,7 @@ interface CategoryRow {
 
 function CategoryBars({ rows, total }: { rows: CategoryRow[]; total: number }) {
   if (rows.length === 0) {
-    return <p className="text-sm text-slate-600">No category data yet.</p>;
+    return <p className="text-sm text-slate-400">No category data yet.</p>;
   }
   const max = rows[0]?.total ?? 0;
   return (
@@ -151,8 +151,8 @@ function CategoryBars({ rows, total }: { rows: CategoryRow[]; total: number }) {
         return (
           <li key={row.name}>
             <div className="mb-1 flex items-baseline justify-between text-sm">
-              <span className="font-medium text-slate-800">{row.name}</span>
-              <span className="text-slate-600">
+              <span className="font-medium text-slate-200">{row.name}</span>
+              <span className="text-slate-400">
                 {formatCurrency(row.total, 2)}
                 <span className="ml-2 text-xs text-slate-500">
                   {Math.round(share * 100)}%
@@ -160,7 +160,7 @@ function CategoryBars({ rows, total }: { rows: CategoryRow[]; total: number }) {
               </span>
             </div>
             <div
-              className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100"
+              className="h-2.5 w-full overflow-hidden rounded-full bg-surface-muted"
               role="progressbar"
               aria-label={`${row.name} spending share`}
               aria-valuenow={Math.round(share * 100)}
@@ -190,11 +190,11 @@ function CoverageBar({ fraction }: { fraction: number }) {
   return (
     <>
       <div className="mt-3 flex items-baseline justify-between">
-        <span className="text-3xl font-semibold text-slate-900">{percent}%</span>
+        <span className="text-3xl font-semibold text-slate-100">{percent}%</span>
         <span className="text-xs text-slate-500">of purchases covered</span>
       </div>
       <div
-        className="mt-2 h-3 w-full overflow-hidden rounded-full bg-slate-100"
+        className="mt-2 h-3 w-full overflow-hidden rounded-full bg-surface-muted"
         role="progressbar"
         aria-label="Warranty coverage"
         aria-valuenow={percent}
@@ -217,20 +217,20 @@ function AnalyticsSkeleton() {
         {Array.from({ length: 3 }).map((_, index) => (
           <div
             key={index}
-            className="h-24 animate-pulse rounded-xl border border-slate-200 bg-slate-50"
+            className="h-24 animate-pulse rounded-xl border border-slate-700 bg-surface-elevated"
           />
         ))}
       </div>
-      <div className="h-56 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
+      <div className="h-56 animate-pulse rounded-xl border border-slate-700 bg-surface-elevated" />
     </>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-      <h2 className="text-lg font-semibold text-slate-900">Nothing to analyse yet</h2>
-      <p className="mt-1 text-sm text-slate-600">
+    <div className="rounded-xl border border-dashed border-slate-700 bg-surface p-10 text-center">
+      <h2 className="text-lg font-semibold text-slate-100">Nothing to analyse yet</h2>
+      <p className="mt-1 text-sm text-slate-400">
         Log a purchase or two and your spending breakdown will appear here.
       </p>
       <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
@@ -242,7 +242,7 @@ function EmptyState() {
         </Link>
         <Link
           to="/purchases/new/quick"
-          className="inline-flex justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          className="inline-flex justify-center rounded-md border border-slate-700 bg-surface px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-surface-elevated"
         >
           Quick add
         </Link>
