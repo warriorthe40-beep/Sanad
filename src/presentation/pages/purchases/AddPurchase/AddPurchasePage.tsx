@@ -7,7 +7,7 @@ import {
   type FormEvent,
 } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MissingApiKeyError, scanReceipt } from '@/application/receiptScanner';
+import { MissingApiKeyError, pdfFirstPageToBlob, scanReceipt } from '@/application/receiptScanner';
 import { hasApiKey } from '@/services/settings/apiKey';
 import { getSuggestion, updateFromUser, type Suggestion } from '@/application/suggestions';
 import { calculateWarrantyEndDate, scheduleAlerts } from '@/application/warranty';
@@ -135,7 +135,9 @@ export default function AddPurchasePage() {
     setIsScanning(true);
     setScanNotice(null);
     try {
-      const data = await scanReceipt(file);
+      const imageBlob =
+        file.type === 'application/pdf' ? await pdfFirstPageToBlob(file) : file;
+      const data = await scanReceipt(imageBlob);
       setForm((prev) => ({
         ...prev,
         storeName: prev.storeName || data.storeName,
@@ -297,7 +299,7 @@ export default function AddPurchasePage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,application/pdf"
             onChange={handleReceiptChange}
             disabled={isScanning || isSaving}
             className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-hover disabled:opacity-60 sm:w-auto"
