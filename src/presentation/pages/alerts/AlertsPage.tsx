@@ -213,7 +213,7 @@ function AlertCard({
               {upcoming ? `in ${days} day${days === 1 ? '' : 's'}` : 'due'}
             </span>
           </div>
-          <p className="mt-1 text-base font-semibold text-slate-100">{alert.message}</p>
+          <p className="mt-1 text-base font-semibold text-slate-400">{alert.message}</p>
           <p className="mt-0.5 text-sm text-slate-400">
             Fires {formatDate(alert.alertDate)}
             {purchase
