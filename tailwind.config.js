@@ -5,9 +5,14 @@ export default {
     extend: {
       colors: {
         brand: {
-          DEFAULT: '#0ea5e9',
-          hover: '#0284c7',
-          soft: '#e0f2fe',
+          DEFAULT: '#8b0000',
+          hover: '#a80000',
+          soft: '#2a0a0a',
+        },
+        surface: {
+          DEFAULT: '#1a1a1e',
+          elevated: '#232328',
+          muted: '#2a2a30',
         },
       },
     },

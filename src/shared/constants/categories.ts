@@ -8,6 +8,7 @@ export const DEFAULT_CATEGORIES = [
   'Appliances',
   'Furniture',
   'Clothing',
+  'Foods',
   'Groceries',
   'Coffee',
   'Beauty',

@@ -88,10 +88,10 @@ export default function AlertsPage() {
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:py-8">
       <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">
             Warranty alerts
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-slate-400">
             Reminders fire at 90, 60, 30, and 7 days before a warranty or return window
             closes.
             {unreadCount > 0 ? ` ${unreadCount} unread.` : ''}
@@ -100,7 +100,7 @@ export default function AlertsPage() {
         <PushPermissionControl state={permission} onEnable={handleEnablePush} />
       </header>
 
-      <div className="mb-4 inline-flex overflow-hidden rounded-md border border-slate-200 bg-white text-sm">
+      <div className="mb-4 inline-flex overflow-hidden rounded-md border border-slate-700 bg-surface text-sm">
         <FilterButton active={filter === 'unread'} onClick={() => setFilter('unread')}>
           Unread
         </FilterButton>
@@ -151,7 +151,7 @@ function AlertCard({
   const days = daysBetween(new Date(), alert.alertDate);
   const upcoming = days > 0;
   const palette = alert.isRead
-    ? 'border-slate-200 bg-white'
+    ? 'border-slate-700 bg-surface'
     : alert.type === 'warranty'
       ? 'border-amber-200 bg-amber-50'
       : 'border-sky-200 bg-sky-50';
@@ -171,7 +171,7 @@ function AlertCard({
               {alert.type === 'warranty' ? 'Warranty' : 'Return'}
             </span>
             {alert.isRead ? (
-              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+              <span className="inline-flex items-center rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-slate-400">
                 Read
               </span>
             ) : null}
@@ -179,8 +179,8 @@ function AlertCard({
               {upcoming ? `in ${days} day${days === 1 ? '' : 's'}` : 'due'}
             </span>
           </div>
-          <p className="mt-1 text-base font-semibold text-slate-900">{alert.message}</p>
-          <p className="mt-0.5 text-sm text-slate-600">
+          <p className="mt-1 text-base font-semibold text-slate-100">{alert.message}</p>
+          <p className="mt-0.5 text-sm text-slate-400">
             Fires {formatDate(alert.alertDate)}
             {purchase
               ? ` · ${purchase.productName?.trim() || purchase.storeName}`
@@ -191,7 +191,7 @@ function AlertCard({
           {purchase ? (
             <Link
               to={`/purchases/${purchase.id}`}
-              className="inline-flex justify-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex justify-center rounded-md border border-slate-700 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-surface-elevated"
             >
               View purchase
             </Link>
@@ -266,7 +266,7 @@ function FilterButton({
       className={`px-3 py-1.5 font-medium transition ${
         active
           ? 'bg-brand text-white'
-          : 'text-slate-700 hover:bg-slate-50'
+          : 'text-slate-300 hover:bg-surface-elevated'
       }`}
     >
       {children}
@@ -280,7 +280,7 @@ function AlertsSkeleton() {
       {Array.from({ length: 4 }).map((_, index) => (
         <li
           key={index}
-          className="h-24 animate-pulse rounded-xl border border-slate-200 bg-slate-50"
+          className="h-24 animate-pulse rounded-xl border border-slate-700 bg-surface-elevated"
         />
       ))}
     </ul>
@@ -289,11 +289,11 @@ function AlertsSkeleton() {
 
 function EmptyState({ filter }: { filter: 'all' | 'unread' }) {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-      <h2 className="text-lg font-semibold text-slate-900">
+    <div className="rounded-xl border border-dashed border-slate-700 bg-surface p-10 text-center">
+      <h2 className="text-lg font-semibold text-slate-100">
         {filter === 'unread' ? 'No unread alerts' : 'No alerts yet'}
       </h2>
-      <p className="mt-1 text-sm text-slate-600">
+      <p className="mt-1 text-sm text-slate-400">
         {filter === 'unread'
           ? 'Everything is acknowledged. Switch to All to see past alerts.'
           : 'Alerts appear here once you log a purchase with a warranty or return window.'}

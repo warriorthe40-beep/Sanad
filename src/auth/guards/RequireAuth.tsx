@@ -22,7 +22,7 @@ export default function RequireAuth() {
 function AuthSpinner() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
-      <span className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-brand" />
+      <span className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-700 border-t-brand" />
     </div>
   );
 }

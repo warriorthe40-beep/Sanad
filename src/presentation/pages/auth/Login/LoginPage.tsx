@@ -56,8 +56,8 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">Welcome back</h1>
-      <p className="mb-6 text-sm text-slate-600">
+      <h1 className="mb-1 text-xl font-semibold text-slate-100">Welcome back</h1>
+      <p className="mb-6 text-sm text-slate-400">
         Sign in to keep track of your purchases and warranties.
       </p>
 
@@ -99,7 +99,7 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-600">
+      <p className="mt-6 text-center text-sm text-slate-400">
         Don&apos;t have an account?{' '}
         <Link to="/register" className="font-semibold text-brand-hover hover:underline">
           Create one
@@ -134,7 +134,7 @@ function Field({
 }: FieldProps) {
   return (
     <div>
-      <label htmlFor={name} className="mb-1 block text-sm font-medium text-slate-800">
+      <label htmlFor={name} className="mb-1 block text-sm font-medium text-slate-200">
         {label}
         {required ? <span className="text-rose-600"> *</span> : null}
       </label>
@@ -147,7 +147,7 @@ function Field({
         disabled={disabled}
         autoComplete={autoComplete}
         autoFocus={autoFocus}
-        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:bg-slate-50"
+        className="block w-full rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:bg-surface-elevated"
       />
     </div>
   );

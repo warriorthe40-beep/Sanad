@@ -37,18 +37,6 @@
   flex: 1;
 }
 
-.profile {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: var(--color-accent-soft);
-  color: var(--color-accent-hover);
-  display: grid;
-  place-items: center;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
 @media (max-width: 1023px) {
   .menuButton {
     display: inline-flex;

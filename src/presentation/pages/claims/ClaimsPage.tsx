@@ -167,10 +167,10 @@ export default function ClaimsPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">
           Report an issue
         </h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-slate-400">
           File a claim against a purchase with an active warranty. Describe what&apos;s
           wrong and optionally attach a damage photo.
         </p>
@@ -183,14 +183,14 @@ export default function ClaimsPage() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
-          <h2 className="text-base font-semibold text-slate-900">New claim</h2>
+        <section className="rounded-xl border border-slate-700 bg-surface p-5 sm:p-6">
+          <h2 className="text-base font-semibold text-slate-100">New claim</h2>
 
           {purchases === null ? (
-            <div className="mt-4 h-40 animate-pulse rounded-md bg-slate-50" />
+            <div className="mt-4 h-40 animate-pulse rounded-md bg-surface-elevated" />
           ) : claimablePurchases.length === 0 ? (
-            <div className="mt-4 rounded-md border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-              <p className="text-sm text-slate-700">
+            <div className="mt-4 rounded-md border border-dashed border-slate-700 bg-surface-elevated p-6 text-center">
+              <p className="text-sm text-slate-300">
                 You don&apos;t have any purchases with an active warranty to claim
                 against.
               </p>
@@ -206,7 +206,7 @@ export default function ClaimsPage() {
               <div>
                 <label
                   htmlFor="purchaseId"
-                  className="mb-1 block text-sm font-medium text-slate-800"
+                  className="mb-1 block text-sm font-medium text-slate-200"
                 >
                   Purchase <span className="text-rose-600">*</span>
                 </label>
@@ -237,7 +237,7 @@ export default function ClaimsPage() {
               <div>
                 <label
                   htmlFor="description"
-                  className="mb-1 block text-sm font-medium text-slate-800"
+                  className="mb-1 block text-sm font-medium text-slate-200"
                 >
                   Description <span className="text-rose-600">*</span>
                 </label>
@@ -256,7 +256,7 @@ export default function ClaimsPage() {
               <div>
                 <label
                   htmlFor="damagePhoto"
-                  className="mb-1 block text-sm font-medium text-slate-800"
+                  className="mb-1 block text-sm font-medium text-slate-200"
                 >
                   Damage photo <span className="text-slate-400">(optional)</span>
                 </label>
@@ -267,19 +267,19 @@ export default function ClaimsPage() {
                   accept="image/*"
                   onChange={handlePhotoChange}
                   disabled={isSaving}
-                  className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-brand-hover"
+                  className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-brand-hover"
                 />
                 {form.damagePhoto ? (
                   <div className="mt-3 flex items-start gap-3">
                     <img
                       src={form.damagePhoto}
                       alt="Damage preview"
-                      className="h-24 w-24 rounded-md border border-slate-200 object-cover"
+                      className="h-24 w-24 rounded-md border border-slate-700 object-cover"
                     />
                     <button
                       type="button"
                       onClick={handleClearPhoto}
-                      className="inline-flex justify-center rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      className="inline-flex justify-center rounded-md border border-slate-700 bg-surface px-2.5 py-1 text-xs font-semibold text-slate-300 hover:bg-surface-elevated"
                     >
                       Remove
                     </button>
@@ -312,18 +312,18 @@ export default function ClaimsPage() {
       </div>
 
       <section className="mt-8">
-        <h2 className="text-base font-semibold text-slate-900">Your claims</h2>
+        <h2 className="text-base font-semibold text-slate-100">Your claims</h2>
         {claims === null ? (
           <ul className="mt-3 space-y-3">
             {Array.from({ length: 3 }).map((_, index) => (
               <li
                 key={index}
-                className="h-20 animate-pulse rounded-xl border border-slate-200 bg-slate-50"
+                className="h-20 animate-pulse rounded-xl border border-slate-700 bg-surface-elevated"
               />
             ))}
           </ul>
         ) : claims.length === 0 ? (
-          <p className="mt-3 rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-600">
+          <p className="mt-3 rounded-xl border border-dashed border-slate-700 bg-surface p-6 text-center text-sm text-slate-400">
             No claims filed yet. Submitted reports will show up here.
           </p>
         ) : (
@@ -346,7 +346,7 @@ export default function ClaimsPage() {
 function SelectedPurchaseCard({ purchase }: { purchase: Purchase | undefined }) {
   if (!purchase) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-600">
+      <div className="rounded-xl border border-dashed border-slate-700 bg-surface p-5 text-sm text-slate-400">
         Select a purchase to see its receipt and warranty info here.
       </div>
     );
@@ -354,12 +354,12 @@ function SelectedPurchaseCard({ purchase }: { purchase: Purchase | undefined }) 
   const warranty = getWarrantyStatusView(purchase);
   const title = purchase.productName?.trim() || purchase.storeName;
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
+    <div className="rounded-xl border border-slate-700 bg-surface p-5">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         Receipt &amp; warranty
       </p>
-      <p className="mt-1 text-base font-semibold text-slate-900">{title}</p>
-      <p className="text-sm text-slate-600">
+      <p className="mt-1 text-base font-semibold text-slate-100">{title}</p>
+      <p className="text-sm text-slate-400">
         {purchase.storeName} · {purchase.categoryName}
       </p>
       <dl className="mt-3 space-y-1.5 text-sm">
@@ -372,7 +372,7 @@ function SelectedPurchaseCard({ purchase }: { purchase: Purchase | undefined }) 
       </dl>
       <Link
         to={`/purchases/${purchase.id}`}
-        className="mt-4 inline-flex justify-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+        className="mt-4 inline-flex justify-center rounded-md border border-slate-700 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-surface-elevated"
       >
         View purchase
       </Link>
@@ -391,7 +391,7 @@ function ClaimCard({
     ? purchase.productName?.trim() || purchase.storeName
     : 'Unknown purchase';
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+    <div className="rounded-xl border border-slate-700 bg-surface p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -400,13 +400,13 @@ function ClaimCard({
               Filed {formatDate(claim.dateReported)}
             </span>
           </div>
-          <p className="mt-1 text-base font-semibold text-slate-900">{title}</p>
+          <p className="mt-1 text-base font-semibold text-slate-100">{title}</p>
           {purchase ? (
             <p className="text-xs text-slate-500">
               {purchase.storeName} · {formatCurrency(purchase.price)}
             </p>
           ) : null}
-          <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">
+          <p className="mt-2 whitespace-pre-wrap text-sm text-slate-200">
             {claim.description}
           </p>
         </div>
@@ -415,13 +415,13 @@ function ClaimCard({
             <img
               src={claim.damagePhoto}
               alt="Damage"
-              className="h-20 w-20 rounded-md border border-slate-200 object-cover"
+              className="h-20 w-20 rounded-md border border-slate-700 object-cover"
             />
           ) : null}
           {purchase ? (
             <Link
               to={`/purchases/${purchase.id}`}
-              className="inline-flex justify-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex justify-center rounded-md border border-slate-700 bg-surface px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-surface-elevated"
             >
               View purchase
             </Link>
@@ -456,17 +456,17 @@ function Row({ label, value }: { label: string; value: string }) {
       <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </dt>
-      <dd className="text-sm text-slate-900">{value}</dd>
+      <dd className="text-sm text-slate-100">{value}</dd>
     </div>
   );
 }
 
 function inputClass(hasError: boolean): string {
   const base =
-    'block w-full rounded-md border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-slate-50';
+    'block w-full rounded-md border bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-surface-elevated';
   return `${base} ${
     hasError
       ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200'
-      : 'border-slate-300 focus:border-brand focus:ring-brand/30'
+      : 'border-slate-700 focus:border-brand focus:ring-brand/30'
   }`;
 }

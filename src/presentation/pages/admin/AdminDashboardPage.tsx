@@ -54,10 +54,10 @@ export default function AdminDashboardPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">
           Admin dashboard
         </h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-slate-400">
           {user ? `Signed in as ${user.name}.` : ''} Manage categories, store
           policies, and community data quality.
         </p>
@@ -96,13 +96,13 @@ export default function AdminDashboardPage() {
 
 function StatCard({ label, value }: { label: string; value: number | undefined }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <div className="rounded-xl border border-slate-700 bg-surface p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </p>
-      <p className="mt-1 text-2xl font-semibold text-slate-900">
+      <p className="mt-1 text-2xl font-semibold text-slate-100">
         {value === undefined ? (
-          <span className="inline-block h-7 w-10 animate-pulse rounded bg-slate-100" />
+          <span className="inline-block h-7 w-10 animate-pulse rounded bg-surface-muted" />
         ) : (
           value
         )}
@@ -125,13 +125,13 @@ function LinkCard({
   return (
     <Link
       to={to}
-      className="group flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
+      className="group flex h-full flex-col justify-between rounded-xl border border-slate-700 bg-surface p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
     >
       <div>
-        <h2 className="text-base font-semibold text-slate-900 group-hover:text-brand-hover">
+        <h2 className="text-base font-semibold text-slate-100 group-hover:text-brand-hover">
           {title}
         </h2>
-        <p className="mt-1 text-sm text-slate-600">{description}</p>
+        <p className="mt-1 text-sm text-slate-400">{description}</p>
       </div>
       <span className="mt-4 text-sm font-semibold text-brand-hover">{cta} →</span>
     </Link>

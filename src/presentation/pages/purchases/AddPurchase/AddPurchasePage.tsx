@@ -15,6 +15,12 @@ import { validatePurchase, type PurchaseValidationErrors } from '@/application/v
 import { purchaseRepository } from '@/data/repositories';
 import { DEFAULT_CATEGORIES } from '@/shared/constants/categories';
 import { getCurrentUserId } from '@/shared/utils/currentUser';
+import DurationOrEndDateField, {
+  fromPurchase,
+  toDurationString,
+  toEndDate,
+  type DurationOrEndDateValue,
+} from '@/presentation/components/DurationOrEndDateField';
 
 /**
  * AddPurchasePage — full "Add Purchase with AI Receipt Scanning" flow from the
@@ -39,8 +45,6 @@ interface FormState {
   categoryName: string;
   price: string;
   purchaseDate: string;
-  warrantyDuration: string;
-  returnWindow: string;
   notes: string;
 }
 
@@ -58,16 +62,20 @@ const INITIAL_FORM: FormState = {
   categoryName: '',
   price: '',
   purchaseDate: todayISO(),
-  warrantyDuration: '',
-  returnWindow: '',
   notes: '',
 };
+
+const INITIAL_WARRANTY: DurationOrEndDateValue = { mode: 'none' };
+const INITIAL_RETURN: DurationOrEndDateValue = { mode: 'none' };
 
 export default function AddPurchasePage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [warranty, setWarranty] = useState<DurationOrEndDateValue>(INITIAL_WARRANTY);
+  const [returnWindow, setReturnWindow] =
+    useState<DurationOrEndDateValue>(INITIAL_RETURN);
   const [errors, setErrors] = useState<PurchaseValidationErrors>({});
   const [isScanning, setIsScanning] = useState(false);
   const [scanNotice, setScanNotice] = useState<string | null>(null);
@@ -155,11 +163,16 @@ export default function AddPurchasePage() {
 
   function applySuggestion() {
     if (!suggestion) return;
-    setForm((prev) => ({
-      ...prev,
-      warrantyDuration: prev.warrantyDuration || suggestion.warranty,
-      returnWindow: prev.returnWindow || suggestion.returnWindow,
-    }));
+    setWarranty((prev) =>
+      prev.mode === 'none' && suggestion.warranty
+        ? fromPurchase(suggestion.warranty, undefined, 'years')
+        : prev
+    );
+    setReturnWindow((prev) =>
+      prev.mode === 'none' && suggestion.returnWindow
+        ? fromPurchase(suggestion.returnWindow, undefined, 'days')
+        : prev
+    );
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -168,14 +181,16 @@ export default function AddPurchasePage() {
 
     const purchaseDate = new Date(form.purchaseDate);
     const price = Number.parseFloat(form.price);
+    const warrantyDuration = toDurationString(warranty);
+    const returnDuration = toDurationString(returnWindow);
     const draft = {
       productName: form.productName.trim() || undefined,
       storeName: form.storeName.trim(),
       categoryName: form.categoryName.trim(),
       price: Number.isNaN(price) ? undefined : price,
       purchaseDate: Number.isNaN(purchaseDate.getTime()) ? undefined : purchaseDate,
-      warrantyDuration: form.warrantyDuration.trim() || undefined,
-      returnWindow: form.returnWindow.trim() || undefined,
+      warrantyDuration,
+      returnWindow: returnDuration,
       notes: form.notes.trim() || undefined,
     };
 
@@ -190,10 +205,16 @@ export default function AddPurchasePage() {
     setSaveError(null);
     try {
       // Step 16: warranty and return window end dates.
-      const warrantyEndDate =
-        calculateWarrantyEndDate(draft.purchaseDate!, draft.warrantyDuration) ?? undefined;
-      const returnEndDate =
-        calculateWarrantyEndDate(draft.purchaseDate!, draft.returnWindow) ?? undefined;
+      const warrantyEndDate = toEndDate(
+        warranty,
+        draft.purchaseDate!,
+        calculateWarrantyEndDate
+      );
+      const returnEndDate = toEndDate(
+        returnWindow,
+        draft.purchaseDate!,
+        calculateWarrantyEndDate
+      );
 
       // Persist the purchase (create()).
       const saved = await purchaseRepository.create({
@@ -238,10 +259,10 @@ export default function AddPurchasePage() {
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-8">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">
           Add purchase
         </h1>
-        <p className="mt-1 text-sm text-slate-600">
+        <p className="mt-1 text-sm text-slate-400">
           Snap the receipt to pre-fill the fields, or type them in yourself.
         </p>
       </header>
@@ -270,7 +291,7 @@ export default function AddPurchasePage() {
         }`}
       >
         <label className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm font-medium text-slate-800">
+          <span className="text-sm font-medium text-slate-200">
             Scan a receipt
           </span>
           <input
@@ -279,7 +300,7 @@ export default function AddPurchasePage() {
             accept="image/*"
             onChange={handleReceiptChange}
             disabled={isScanning || isSaving}
-            className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-hover disabled:opacity-60 sm:w-auto"
+            className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-hover disabled:opacity-60 sm:w-auto"
           />
         </label>
         {isScanning ? (
@@ -291,7 +312,7 @@ export default function AddPurchasePage() {
             Scanning receipt…
           </p>
         ) : scanNotice ? (
-          <p className="mt-3 text-sm text-slate-700">{scanNotice}</p>
+          <p className="mt-3 text-sm text-slate-300">{scanNotice}</p>
         ) : (
           <p className="mt-3 text-xs text-slate-500">
             We&apos;ll extract the store, amount, and date. You can always edit them below.
@@ -321,7 +342,7 @@ export default function AddPurchasePage() {
         />
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-800">
+          <label className="mb-1 block text-sm font-medium text-slate-200">
             Category <span className="text-rose-600">*</span>
           </label>
           <select
@@ -372,7 +393,7 @@ export default function AddPurchasePage() {
 
         {suggestionMessage ? (
           <div className="flex flex-col gap-2 rounded-lg border border-brand/30 bg-brand-soft/60 p-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-800">{suggestionMessage}</p>
+            <p className="text-sm text-slate-200">{suggestionMessage}</p>
             <button
               type="button"
               onClick={applySuggestion}
@@ -385,28 +406,36 @@ export default function AddPurchasePage() {
         ) : null}
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field
-            label="Warranty duration"
-            name="warrantyDuration"
-            value={form.warrantyDuration}
-            onChange={handleChange}
+          <DurationOrEndDateField
+            label="Warranty"
+            idPrefix="warranty"
+            value={warranty}
+            onChange={(next) => {
+              setWarranty(next);
+              setErrors((prev) => ({ ...prev, warrantyDuration: undefined }));
+            }}
+            minDate={form.purchaseDate}
             disabled={isSaving}
             error={errors.warrantyDuration}
-            placeholder="e.g. 1 year"
+            defaultUnit="years"
           />
-          <Field
+          <DurationOrEndDateField
             label="Return window"
-            name="returnWindow"
-            value={form.returnWindow}
-            onChange={handleChange}
+            idPrefix="return"
+            value={returnWindow}
+            onChange={(next) => {
+              setReturnWindow(next);
+              setErrors((prev) => ({ ...prev, returnWindow: undefined }));
+            }}
+            minDate={form.purchaseDate}
             disabled={isSaving}
             error={errors.returnWindow}
-            placeholder="e.g. 14 days"
+            defaultUnit="days"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-800">Notes</label>
+          <label className="mb-1 block text-sm font-medium text-slate-200">Notes</label>
           <textarea
             name="notes"
             value={form.notes}
@@ -436,7 +465,7 @@ export default function AddPurchasePage() {
             type="button"
             onClick={() => navigate(-1)}
             disabled={isSaving}
-            className="inline-flex justify-center rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className="inline-flex justify-center rounded-md border border-slate-700 bg-surface px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-surface-elevated disabled:opacity-60"
           >
             Cancel
           </button>
@@ -479,7 +508,7 @@ function Field({
 }: FieldProps) {
   return (
     <div>
-      <label htmlFor={name} className="mb-1 block text-sm font-medium text-slate-800">
+      <label htmlFor={name} className="mb-1 block text-sm font-medium text-slate-200">
         {label}
         {required ? <span className="text-rose-600"> *</span> : null}
       </label>
@@ -503,11 +532,11 @@ function Field({
 
 function inputClass(hasError: boolean): string {
   const base =
-    'block w-full rounded-md border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-slate-50';
+    'block w-full rounded-md border bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-surface-elevated';
   return `${base} ${
     hasError
       ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200'
-      : 'border-slate-300 focus:border-brand focus:ring-brand/30'
+      : 'border-slate-700 focus:border-brand focus:ring-brand/30'
   }`;
 }
 

@@ -17,7 +17,6 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
       </button>
       <span className={styles.title}>Sanad</span>
       <div className={styles.spacer} />
-      <div className={styles.profile} aria-label="Profile">U</div>
     </header>
   );
 }
