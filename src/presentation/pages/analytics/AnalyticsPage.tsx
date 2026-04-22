@@ -109,10 +109,12 @@ function granularityFor(viewType: ViewType, start: Date, end: Date): TrendGranul
   return diffDays <= 90 ? 'day' : 'month';
 }
 
+const MAX_X_TICKS = 7;
+
 function xInterval(granularity: TrendGranularity, count: number): number {
-  if (granularity === 'month') return 0;
-  if (granularity === 'hour') return 3;
-  return Math.max(0, Math.ceil(count / 8) - 1);
+  if (granularity === 'hour') return 3; // 24 hrs → every 4th = 6 labels
+  if (count <= MAX_X_TICKS) return 0;  // few enough → show all
+  return Math.max(1, Math.round(count / MAX_X_TICKS) - 1);
 }
 
 function periodLabel(
