@@ -241,10 +241,10 @@ export default function AddPurchasePage() {
 
       // Steps 17–20: schedule expiry alerts for whichever end dates exist.
       if (warrantyEndDate) {
-        await scheduleAlerts(saved.id, warrantyEndDate, 'warranty');
+        await scheduleAlerts(saved.id, draft.purchaseDate!, warrantyEndDate, 'warranty');
       }
       if (returnEndDate) {
-        await scheduleAlerts(saved.id, returnEndDate, 'return');
+        await scheduleAlerts(saved.id, draft.purchaseDate!, returnEndDate, 'return');
       }
 
       // Steps 21–22: success.

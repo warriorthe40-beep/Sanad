@@ -50,7 +50,7 @@ export function schedulePush(alert: Alert): void {
   const fireAt = alert.alertDate.toISOString();
   // eslint-disable-next-line no-console
   console.info(
-    `[sanad:push] scheduled "${alert.message}" for ${fireAt} (alert=${alert.id})`
+    `[sanad:push] scheduled [${alert.type}] "${alert.message}" for ${fireAt} (${alert.daysBeforeExpiry}d before expiry, alert=${alert.id})`
   );
 
   if (!isSupported() || getPermission() !== 'granted') return;

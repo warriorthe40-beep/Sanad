@@ -57,14 +57,48 @@ export default function AlertsPage() {
     };
   }, []);
 
-  const visible = useMemo(() => {
+  // For "All" tab: the single earliest alert per (purchaseId, type) group.
+  const nearestPerGroup = useMemo(() => {
     if (!alerts) return [];
-    return filter === 'unread' ? alerts.filter((alert) => !alert.isRead) : alerts;
-  }, [alerts, filter]);
+    const groups = new Map<string, Alert>();
+    for (const alert of alerts) {
+      const key = `${alert.purchaseId}:${alert.type}`;
+      const cur = groups.get(key);
+      if (!cur || alert.alertDate.getTime() < cur.alertDate.getTime()) {
+        groups.set(key, alert);
+      }
+    }
+    return Array.from(groups.values()).sort(
+      (a, b) => a.alertDate.getTime() - b.alertDate.getTime()
+    );
+  }, [alerts]);
+
+  // For "Unread" tab: the single earliest *unread* alert per (purchaseId, type) group.
+  // Advancing past a read alert reveals the next one automatically.
+  const nearestUnreadPerGroup = useMemo(() => {
+    if (!alerts) return [];
+    const groups = new Map<string, Alert>();
+    for (const alert of alerts) {
+      if (alert.isRead) continue;
+      const key = `${alert.purchaseId}:${alert.type}`;
+      const cur = groups.get(key);
+      if (!cur || alert.alertDate.getTime() < cur.alertDate.getTime()) {
+        groups.set(key, alert);
+      }
+    }
+    return Array.from(groups.values()).sort(
+      (a, b) => a.alertDate.getTime() - b.alertDate.getTime()
+    );
+  }, [alerts]);
+
+  const visible = useMemo(
+    () => (alerts ? (filter === 'unread' ? nearestUnreadPerGroup : nearestPerGroup) : []),
+    [alerts, filter, nearestPerGroup, nearestUnreadPerGroup]
+  );
 
   const unreadCount = useMemo(
-    () => (alerts ? alerts.filter((alert) => !alert.isRead).length : 0),
-    [alerts]
+    () => nearestUnreadPerGroup.length,
+    [nearestUnreadPerGroup]
   );
 
   async function handleMarkRead(alert: Alert) {
@@ -92,8 +126,8 @@ export default function AlertsPage() {
             Warranty alerts
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            Reminders fire at 90, 60, 30, and 7 days before a warranty or return window
-            closes.
+            One active reminder per item — mark it read to reveal the next scheduled
+            alert.
             {unreadCount > 0 ? ` ${unreadCount} unread.` : ''}
           </p>
         </div>

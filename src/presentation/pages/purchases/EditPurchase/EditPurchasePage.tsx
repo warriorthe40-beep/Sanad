@@ -173,10 +173,10 @@ export default function EditPurchasePage() {
         const existing = await alertRepository.getByPurchaseId(purchase.id);
         await Promise.all(existing.map((alert) => alertRepository.delete(alert.id)));
         if (warrantyEndDate) {
-          await scheduleAlerts(purchase.id, warrantyEndDate, 'warranty');
+          await scheduleAlerts(purchase.id, draft.purchaseDate!, warrantyEndDate, 'warranty');
         }
         if (returnEndDate) {
-          await scheduleAlerts(purchase.id, returnEndDate, 'return');
+          await scheduleAlerts(purchase.id, draft.purchaseDate!, returnEndDate, 'return');
         }
       }
 
