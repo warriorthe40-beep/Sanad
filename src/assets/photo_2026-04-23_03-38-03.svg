@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 430" role="img" aria-label="Sanad logo">
+  <defs>
+    <radialGradient id="sanad-bg" cx="50%" cy="45%" r="75%">
+      <stop offset="0%" stop-color="#a80000"/>
+      <stop offset="100%" stop-color="#3a0000"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="430" fill="url(#sanad-bg)"/>
+  <g transform="translate(140 70)" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 6 L112 6 L112 220 L104 220 Q100 212 92 220 Q84 228 76 220 Q68 212 60 220 Q52 228 44 220 Q36 212 28 220 Q20 228 12 220 Q8 216 8 212 Z"/>
+    <path d="M112 6 Q124 6 124 18 L124 32 L112 22"/>
+    <rect x="45" y="28" width="40" height="16" rx="3"/>
+    <line x1="25" y1="68" x2="105" y2="68"/>
+    <line x1="25" y1="88" x2="95" y2="88"/>
+    <line x1="25" y1="108" x2="105" y2="108"/>
+    <line x1="25" y1="128" x2="90" y2="128"/>
+    <line x1="25" y1="148" x2="80" y2="148"/>
+    <line x1="25" y1="168" x2="60" y2="168" stroke-dasharray="5 5"/>
+    <line x1="25" y1="188" x2="75" y2="188"/>
+  </g>
+  <text x="235" y="268" font-family="system-ui, -apple-system, 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="16" fill="#ffffff">SR</text>
+  <text x="200" y="400" font-family="'Noto Sans Arabic', 'Segoe UI Arabic', Tahoma, system-ui, sans-serif" font-weight="900" font-size="110" fill="#ffffff" text-anchor="middle">سند</text>
+</svg>
