@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/context/AuthContext';
-import logoSvg from '../../assets/photo_2026-04-23_03-38-03.svg';
+import logoSvg from '../../assets/photo_2026-04-23_05-03-02.jpg';
 import styles from './Sidebar.module.css';
 
 interface SidebarProps {
