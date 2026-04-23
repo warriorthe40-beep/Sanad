@@ -7,7 +7,7 @@ export { MissingApiKeyError } from '@/services/anthropic/anthropicClient';
  * AI receipt scanning, implementing steps 3–5 of the sequence diagram
  * (:ReceiptScanner → :AnthropicAPI).
  *
- * Calls Claude's Vision API with the receipt image and a JSON-schema
+ * Calls Claude's Vision API with the receipt image (or PDF) and a JSON-schema
  * structured-output constraint so we get a typed `{storeName, amount,
  * date}` payload rather than free-form prose to parse. If the user
  * hasn't configured an API key, we throw `MissingApiKeyError` — the UI
@@ -18,11 +18,16 @@ export { MissingApiKeyError } from '@/services/anthropic/anthropicClient';
  * (up to 2576px long edge) and measurable gains on natural-image
  * detection — both matter for receipt legibility.
  */
-const SUPPORTED_MEDIA_TYPES = new Set([
+const SUPPORTED_IMAGE_MEDIA_TYPES = new Set([
   'image/jpeg',
   'image/png',
   'image/gif',
   'image/webp',
+]);
+
+const SUPPORTED_MEDIA_TYPES = new Set([
+  ...SUPPORTED_IMAGE_MEDIA_TYPES,
+  'application/pdf',
 ]);
 
 const RECEIPT_EXTRACTION_PROMPT =
@@ -68,6 +73,25 @@ export async function scanReceipt(
   const client = createAnthropicClient();
   const { data, mediaType } = await fileToBase64(image);
 
+  const receiptBlock =
+    mediaType === 'application/pdf'
+      ? ({
+          type: 'document' as const,
+          source: {
+            type: 'base64' as const,
+            media_type: 'application/pdf' as const,
+            data,
+          },
+        } as const)
+      : ({
+          type: 'image' as const,
+          source: {
+            type: 'base64' as const,
+            media_type: mediaType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+            data,
+          },
+        } as const);
+
   const response = await client.messages.create({
     model: 'claude-opus-4-7',
     max_tokens: 1024,
@@ -81,14 +105,7 @@ export async function scanReceipt(
       {
         role: 'user',
         content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: mediaType,
-              data,
-            },
-          },
+          receiptBlock,
           { type: 'text', text: RECEIPT_EXTRACTION_PROMPT },
         ],
       },
@@ -120,7 +137,7 @@ export async function scanReceipt(
   };
 }
 
-type SupportedMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+type SupportedMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' | 'application/pdf';
 
 async function fileToBase64(
   file: File | Blob
@@ -128,7 +145,7 @@ async function fileToBase64(
   const rawMediaType = file.type || 'image/jpeg';
   if (!SUPPORTED_MEDIA_TYPES.has(rawMediaType)) {
     throw new Error(
-      `Unsupported image format "${rawMediaType}". Use JPEG, PNG, GIF, or WebP.`
+      `Unsupported format "${rawMediaType}". Use JPEG, PNG, GIF, WebP, or PDF.`
     );
   }
   const mediaType = rawMediaType as SupportedMediaType;
