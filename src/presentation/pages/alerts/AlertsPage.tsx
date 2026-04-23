@@ -217,7 +217,7 @@ function AlertCard({
               </span>
             ) : null}
           </div>
-          <p className="mt-1.5 text-base font-semibold text-slate-100">{title}</p>
+          <p className="mt-1.5 text-base font-bold text-black">{title}</p>
           <p className="mt-0.5 text-sm text-slate-400">
             Expires in {daysUntilExpiry} day{daysUntilExpiry === 1 ? '' : 's'}{' '}
             · {formatDate(expiryDate)}
