@@ -46,7 +46,11 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       aria-label="Primary navigation"
     >
       <div className={styles.brand}>
-        <span className={styles.brandMark} aria-hidden="true">S</span>
+        <img
+          src="/icons/photo_2026-04-23_03-38-03.svg"
+          alt="Sanad Logo"
+          className="h-8 w-8 object-contain"
+        />
         <span className={styles.brandName}>Sanad</span>
       </div>
 
