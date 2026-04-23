@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MissingApiKeyError, pdfFirstPageToBlob, scanReceipt } from '@/application/receiptScanner';
+import { documentRepository } from '@/data/repositories';
 import { hasApiKey } from '@/services/settings/apiKey';
 import { getSuggestion, updateFromUser, type Suggestion } from '@/application/suggestions';
 import { calculateWarrantyEndDate, scheduleAlerts } from '@/application/warranty';
@@ -89,6 +90,7 @@ export default function AddPurchasePage() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const previewObjectUrl = useRef<string | null>(null);
+  const uploadedFile = useRef<File | null>(null);
 
   // Steps 7–8: re-fetch the community suggestion whenever the
   // (store, category) pair becomes complete.
@@ -138,6 +140,9 @@ export default function AddPurchasePage() {
   async function handleReceiptChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Keep a reference to the file so we can save it as a receipt document after submit
+    uploadedFile.current = file;
 
     // Create preview URL for the uploaded file
     if (previewObjectUrl.current) URL.revokeObjectURL(previewObjectUrl.current);
@@ -253,6 +258,24 @@ export default function AddPurchasePage() {
         returnEndDate,
         notes: draft.notes,
       });
+
+      // Save the scanned receipt as a Document linked to this purchase.
+      if (uploadedFile.current) {
+        try {
+          const file = uploadedFile.current;
+          const imageBlob =
+            file.type === 'application/pdf' ? await pdfFirstPageToBlob(file) : file;
+          const imageData = await readFileAsDataUrl(imageBlob);
+          await documentRepository.create({
+            purchaseId: saved.id,
+            imageData,
+            type: 'receipt',
+            uploadDate: new Date(),
+          });
+        } catch {
+          // Non-fatal: purchase is saved; document attachment is best-effort.
+        }
+      }
 
       // Step 15: feed the community dataset.
       await updateFromUser(
@@ -711,4 +734,16 @@ function toISODate(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+function readFileAsDataUrl(file: File | Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') resolve(reader.result);
+      else reject(new Error('Could not read file.'));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('File read failed.'));
+    reader.readAsDataURL(file);
+  });
 }
