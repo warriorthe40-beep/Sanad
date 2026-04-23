@@ -5,6 +5,7 @@ import {
   useState,
   type ChangeEvent,
   type FormEvent,
+  type KeyboardEvent,
 } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MissingApiKeyError, scanReceipt } from '@/application/receiptScanner';
@@ -83,6 +84,11 @@ export default function AddPurchasePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [apiKeyMissing, setApiKeyMissing] = useState<boolean>(() => !hasApiKey());
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewType, setPreviewType] = useState<'image' | 'pdf' | null>(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+  const previewObjectUrl = useRef<string | null>(null);
 
   // Steps 7–8: re-fetch the community suggestion whenever the
   // (store, category) pair becomes complete.
@@ -102,6 +108,12 @@ export default function AddPurchasePage() {
     };
   }, [form.storeName, form.categoryName]);
 
+  useEffect(() => {
+    return () => {
+      if (previewObjectUrl.current) URL.revokeObjectURL(previewObjectUrl.current);
+    };
+  }, []);
+
   const suggestionMessage = useMemo(() => {
     if (!suggestion) return null;
     const src = suggestion.source === 'community' ? 'Community' : 'Seed';
@@ -120,12 +132,21 @@ export default function AddPurchasePage() {
     setSaveError(null);
   }
 
-  // Steps 2–6: user uploads a receipt photo, we call the mock scanner and
+  // Steps 2–6: user uploads a receipt photo/PDF, we call the scanner and
   // merge the extracted fields into the form (without clobbering fields the
   // user has already typed).
   async function handleReceiptChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Create preview URL for the uploaded file
+    if (previewObjectUrl.current) URL.revokeObjectURL(previewObjectUrl.current);
+    const url = URL.createObjectURL(file);
+    previewObjectUrl.current = url;
+    setPreviewUrl(url);
+    setPreviewType(file.type === 'application/pdf' ? 'pdf' : 'image');
+    setZoomScale(1);
+
     if (!hasApiKey()) {
       setApiKeyMissing(true);
       setScanNotice(null);
@@ -297,13 +318,62 @@ export default function AddPurchasePage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,application/pdf"
             onChange={handleReceiptChange}
             disabled={isScanning || isSaving}
             className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-hover disabled:opacity-60 sm:w-auto"
           />
         </label>
-        {isScanning ? (
+
+        {previewUrl ? (
+          <div className="mt-3 flex items-start gap-3">
+            <button
+              type="button"
+              aria-label="View full size"
+              onClick={() => { setIsLightboxOpen(true); setZoomScale(1); }}
+              className="group relative overflow-hidden rounded-lg border border-slate-700 bg-surface transition-colors hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand/50"
+            >
+              {previewType === 'image' ? (
+                <img
+                  src={previewUrl}
+                  alt="Receipt preview"
+                  className="h-20 w-20 object-cover"
+                />
+              ) : (
+                <div className="flex h-20 w-20 flex-col items-center justify-center gap-1 text-slate-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-rose-400">
+                    <path d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a1.875 1.875 0 0 1-1.875-1.875V5.25A3.75 3.75 0 0 0 9 1.5H5.625Z" />
+                    <path d="M12.971 1.816A5.23 5.23 0 0 1 14.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 0 1 3.434 1.279 9.768 9.768 0 0 0-6.963-6.963Z" />
+                  </svg>
+                  <span className="text-xs font-medium">PDF</span>
+                </div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-white">
+                  <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                  <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 0 1 0-1.113ZM17.25 12a5.25 5.25 0 1 1-10.5 0 5.25 5.25 0 0 1 10.5 0Z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </button>
+            <div className="flex-1">
+              {isScanning ? (
+                <p className="flex items-center gap-2 text-sm text-brand-hover">
+                  <span
+                    aria-hidden="true"
+                    className="h-4 w-4 animate-spin rounded-full border-2 border-brand/40 border-t-brand-hover"
+                  />
+                  Scanning receipt…
+                </p>
+              ) : scanNotice ? (
+                <p className="text-sm text-slate-300">{scanNotice}</p>
+              ) : (
+                <p className="text-xs text-slate-500">
+                  Tap the thumbnail to zoom in.
+                </p>
+              )}
+            </div>
+          </div>
+        ) : isScanning ? (
           <p className="mt-3 flex items-center gap-2 text-sm text-brand-hover">
             <span
               aria-hidden="true"
@@ -315,10 +385,97 @@ export default function AddPurchasePage() {
           <p className="mt-3 text-sm text-slate-300">{scanNotice}</p>
         ) : (
           <p className="mt-3 text-xs text-slate-500">
-            We&apos;ll extract the store, amount, and date. You can always edit them below.
+            We&apos;ll extract the store, amount, and date. Supports images and PDFs.
           </p>
         )}
       </section>
+
+      {isLightboxOpen && previewUrl ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Receipt preview"
+          className="fixed inset-0 z-50 flex flex-col bg-black/95"
+          onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
+            if (e.key === 'Escape') setIsLightboxOpen(false);
+          }}
+          tabIndex={-1}
+          ref={(el) => el?.focus()}
+        >
+          <div className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 px-4 py-3">
+            {previewType === 'image' ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Zoom out"
+                  onClick={() => setZoomScale((s) => Math.max(0.25, s - 0.25))}
+                  className="flex h-8 w-8 items-center justify-center rounded-md border border-white/20 text-white hover:bg-white/10 disabled:opacity-40"
+                  disabled={zoomScale <= 0.25}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                    <path fillRule="evenodd" d="M4 10a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 10Z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                <span className="min-w-[3.5rem] text-center text-sm tabular-nums text-white/80">
+                  {Math.round(zoomScale * 100)}%
+                </span>
+                <button
+                  type="button"
+                  aria-label="Zoom in"
+                  onClick={() => setZoomScale((s) => Math.min(5, s + 0.25))}
+                  className="flex h-8 w-8 items-center justify-center rounded-md border border-white/20 text-white hover:bg-white/10 disabled:opacity-40"
+                  disabled={zoomScale >= 5}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                    <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZoomScale(1)}
+                  className="rounded-md border border-white/20 px-2 py-1 text-xs text-white/60 hover:bg-white/10"
+                >
+                  Reset
+                </button>
+              </div>
+            ) : (
+              <span className="text-sm text-white/60">PDF — use browser controls to zoom</span>
+            )}
+            <button
+              type="button"
+              aria-label="Close preview"
+              onClick={() => setIsLightboxOpen(false)}
+              className="ml-auto flex h-8 w-8 items-center justify-center rounded-md border border-white/20 text-white hover:bg-white/10"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-auto">
+            {previewType === 'image' ? (
+              <div
+                style={{ width: `${Math.max(zoomScale * 100, 100)}%` }}
+                className="min-h-full flex items-start justify-center p-4"
+              >
+                <img
+                  src={previewUrl}
+                  alt="Receipt full view"
+                  className="w-full h-auto select-none"
+                  draggable={false}
+                />
+              </div>
+            ) : (
+              <iframe
+                src={previewUrl}
+                title="Receipt PDF"
+                className="h-full w-full border-0"
+              />
+            )}
+          </div>
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         <Field
