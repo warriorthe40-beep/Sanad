@@ -164,10 +164,16 @@ export default function PurchaseDetailsPage() {
         </p>
       </header>
 
-      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <CountdownCard title="Warranty" status={warranty} />
-        <CountdownCard title="Return window" status={returnWindow} />
-      </section>
+      {warranty.kind !== 'none' || returnWindow.kind !== 'none' ? (
+        <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {warranty.kind !== 'none' ? (
+            <CountdownCard title="Warranty" status={warranty} />
+          ) : null}
+          {returnWindow.kind !== 'none' ? (
+            <CountdownCard title="Return window" status={returnWindow} />
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="mb-6 rounded-xl border border-slate-700 bg-surface p-4 sm:p-6">
         <h2 className="text-base font-semibold text-slate-100">Details</h2>

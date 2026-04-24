@@ -36,6 +36,7 @@ export default function PurchaseListPage() {
   const [warrantyFilter, setWarrantyFilter] = useState<WarrantyFilter>('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,8 +128,8 @@ export default function PurchaseListPage() {
         aria-label="Filters"
         className="mb-6 rounded-xl border border-slate-700 bg-surface p-4"
       >
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="lg:col-span-2">
+        <div className="flex items-end gap-3">
+          <label className="flex-1">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
               Search
             </span>
@@ -140,78 +141,91 @@ export default function PurchaseListPage() {
               className={filterInputClass}
             />
           </label>
-          <label>
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Category
-            </span>
-            <select
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              className={filterInputClass}
-            >
-              <option value={ALL_CATEGORIES}>All categories</option>
-              {categories.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Warranty
-            </span>
-            <select
-              value={warrantyFilter}
-              onChange={(event) =>
-                setWarrantyFilter(event.target.value as WarrantyFilter)
-              }
-              className={filterInputClass}
-            >
-              {(['all', 'active', 'expiring', 'expired', 'none'] as WarrantyFilter[]).map(
-                (option) => (
-                  <option key={option} value={option}>
-                    {WARRANTY_FILTER_LABELS[option]}
-                  </option>
-                )
-              )}
-            </select>
-          </label>
-          <label>
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              From
-            </span>
-            <input
-              type="date"
-              value={dateFrom}
-              max={dateTo || undefined}
-              onChange={(event) => setDateFrom(event.target.value)}
-              className={filterInputClass}
-            />
-          </label>
-          <label>
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              To
-            </span>
-            <input
-              type="date"
-              value={dateTo}
-              min={dateFrom || undefined}
-              onChange={(event) => setDateTo(event.target.value)}
-              className={filterInputClass}
-            />
-          </label>
-          <div className="flex items-end lg:col-span-2">
-            <button
-              type="button"
-              onClick={resetFilters}
-              disabled={!hasActiveFilters}
-              className="inline-flex h-[38px] w-full items-center justify-center rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-surface-elevated disabled:opacity-50"
-            >
-              Reset filters
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((v) => !v)}
+            className="inline-flex h-[38px] shrink-0 items-center gap-1.5 rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-surface-elevated"
+          >
+            Filters
+            <span aria-hidden="true">{filtersOpen ? '▲' : '▼'}</span>
+          </button>
         </div>
+
+        {filtersOpen ? (
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label>
+              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Category
+              </span>
+              <select
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+                className={filterInputClass}
+              >
+                <option value={ALL_CATEGORIES}>All categories</option>
+                {categories.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Warranty
+              </span>
+              <select
+                value={warrantyFilter}
+                onChange={(event) =>
+                  setWarrantyFilter(event.target.value as WarrantyFilter)
+                }
+                className={filterInputClass}
+              >
+                {(['all', 'active', 'expiring', 'expired', 'none'] as WarrantyFilter[]).map(
+                  (option) => (
+                    <option key={option} value={option}>
+                      {WARRANTY_FILTER_LABELS[option]}
+                    </option>
+                  )
+                )}
+              </select>
+            </label>
+            <label>
+              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                From
+              </span>
+              <input
+                type="date"
+                value={dateFrom}
+                max={dateTo || undefined}
+                onChange={(event) => setDateFrom(event.target.value)}
+                className={filterInputClass}
+              />
+            </label>
+            <label>
+              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                To
+              </span>
+              <input
+                type="date"
+                value={dateTo}
+                min={dateFrom || undefined}
+                onChange={(event) => setDateTo(event.target.value)}
+                className={filterInputClass}
+              />
+            </label>
+            <div className="flex items-end sm:col-span-2 lg:col-span-4">
+              <button
+                type="button"
+                onClick={resetFilters}
+                disabled={!hasActiveFilters}
+                className="inline-flex h-[38px] w-full items-center justify-center rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-surface-elevated disabled:opacity-50"
+              >
+                Reset filters
+              </button>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       {loadError ? (
@@ -373,24 +387,9 @@ function QuickAddFab() {
   return (
     <Link
       to="/purchases/new/quick"
-      aria-label="Quick add purchase"
-      title="Quick add"
-      className="fixed bottom-6 right-6 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full bg-brand text-white shadow-lg transition hover:bg-brand-hover hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-brand/50"
+      className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-hover hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-brand/50"
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="h-6 w-6"
-        aria-hidden="true"
-      >
-        <path d="M12 5v14" />
-        <path d="M5 12h14" />
-      </svg>
+      Quick Add
     </Link>
   );
 }

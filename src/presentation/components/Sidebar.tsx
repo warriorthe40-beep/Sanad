@@ -16,7 +16,6 @@ interface NavItem {
 
 const primaryNav: NavItem[] = [
   { to: '/purchases', label: 'Purchases', icon: '🧾', end: true },
-  { to: '/purchases/new', label: 'Add Purchase', icon: '➕' },
   { to: '/alerts', label: 'Alerts', icon: '🔔' },
   { to: '/analytics', label: 'Analytics', icon: '📊' },
   { to: '/claims', label: 'Report Issue', icon: '🛠️' },
