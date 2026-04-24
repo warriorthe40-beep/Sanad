@@ -80,6 +80,14 @@ export async function login(input: LoginInput): Promise<AuthUser> {
   return userToAuthUser(data.user);
 }
 
+export async function resetPasswordForEmail(email: string): Promise<void> {
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    email.trim().toLowerCase(),
+    { redirectTo: `${window.location.origin}/reset-password` }
+  );
+  if (error) throw new AuthError(error.message);
+}
+
 /** Fire-and-forget — context clears state synchronously before this resolves. */
 export function logout(): void {
   void supabase.auth.signOut();

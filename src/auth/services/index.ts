@@ -4,6 +4,7 @@ export {
   login,
   logout,
   register,
+  resetPasswordForEmail,
   userToAuthUser,
   type AuthUser,
   type LoginInput,

@@ -5,6 +5,7 @@ import AuthLayout from '@/presentation/layouts/AuthLayout';
 
 import LoginPage from '@/presentation/pages/auth/Login/LoginPage';
 import RegisterPage from '@/presentation/pages/auth/Register/RegisterPage';
+import ResetPasswordPage from '@/presentation/pages/auth/ResetPassword/ResetPasswordPage';
 
 import PurchaseListPage from '@/presentation/pages/purchases/PurchaseList/PurchaseListPage';
 import AddPurchasePage from '@/presentation/pages/purchases/AddPurchase/AddPurchasePage';
@@ -40,6 +41,7 @@ export default function AppRoutes() {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
 
       <Route element={<RequireAuth />}>

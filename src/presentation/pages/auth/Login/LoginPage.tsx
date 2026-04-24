@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/context/AuthContext';
-import { AuthError } from '@/auth/services';
+import { AuthError, resetPasswordForEmail } from '@/auth/services';
 
 interface FormState {
   email: string;
@@ -15,6 +15,9 @@ const INITIAL: FormState = { email: '', password: '' };
  * updated and we navigate the user to the landing route for their role:
  * admins go to `/admin`, regular users to `/purchases`. A `from` hint in
  * location state takes priority when present.
+ *
+ * "Forgot password?" toggles an inline reset-request view that calls
+ * Supabase's resetPasswordForEmail and sends the user a link to /reset-password.
  */
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -24,10 +27,23 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setError(null);
+  }
+
+  function enterForgotMode() {
+    setResetEmail(form.email);
+    setResetSent(false);
+    setResetError(null);
+    setMode('forgot');
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -54,6 +70,86 @@ export default function LoginPage() {
     }
   }
 
+  async function handleForgotSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (resetSubmitting) return;
+    setResetSubmitting(true);
+    setResetError(null);
+    try {
+      await resetPasswordForEmail(resetEmail);
+      setResetSent(true);
+    } catch (err) {
+      setResetError(
+        err instanceof AuthError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Could not send reset link.'
+      );
+    } finally {
+      setResetSubmitting(false);
+    }
+  }
+
+  if (mode === 'forgot') {
+    return (
+      <div>
+        <h1 className="mb-1 text-xl font-semibold text-slate-100">Reset your password</h1>
+        <p className="mb-6 text-sm text-slate-400">
+          Enter your email and we'll send you a link to set a new password.
+        </p>
+
+        {resetSent ? (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+            <p className="font-semibold">Check your inbox</p>
+            <p className="mt-0.5">
+              We sent a reset link to <span className="font-medium">{resetEmail}</span>.
+              It may take a minute to arrive.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleForgotSubmit} noValidate className="space-y-4">
+            <Field
+              label="Email"
+              name="resetEmail"
+              type="email"
+              autoComplete="email"
+              value={resetEmail}
+              onChange={(e) => { setResetEmail(e.target.value); setResetError(null); }}
+              disabled={resetSubmitting}
+              required
+              autoFocus
+            />
+
+            {resetError ? (
+              <p className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                {resetError}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={resetSubmitting}
+              className="inline-flex w-full justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover disabled:opacity-60"
+            >
+              {resetSubmitting ? 'Sending…' : 'Send reset link'}
+            </button>
+          </form>
+        )}
+
+        <p className="mt-6 text-center text-sm text-slate-400">
+          <button
+            type="button"
+            onClick={() => setMode('login')}
+            className="font-semibold text-brand-hover hover:underline"
+          >
+            ← Back to sign in
+          </button>
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 className="mb-1 text-xl font-semibold text-slate-100">Welcome back</h1>
@@ -73,16 +169,32 @@ export default function LoginPage() {
           required
           autoFocus
         />
-        <Field
-          label="Password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          value={form.password}
-          onChange={handleChange}
-          disabled={isSubmitting}
-          required
-        />
+
+        <div>
+          <div className="mb-1 flex items-center justify-between">
+            <label htmlFor="password" className="text-sm font-medium text-slate-200">
+              Password <span className="text-rose-600">*</span>
+            </label>
+            <button
+              type="button"
+              onClick={enterForgotMode}
+              className="text-xs text-slate-400 hover:text-brand-hover hover:underline"
+            >
+              Forgot password?
+            </button>
+          </div>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            value={form.password}
+            onChange={handleChange}
+            disabled={isSubmitting}
+            required
+            className="block w-full rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm text-slate-100 shadow-sm placeholder:text-slate-400 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:bg-surface-elevated"
+          />
+        </div>
 
         {error ? (
           <p className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
