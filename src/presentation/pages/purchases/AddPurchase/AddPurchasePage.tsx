@@ -73,6 +73,7 @@ const INITIAL_RETURN: DurationOrEndDateValue = { mode: 'none' };
 export default function AddPurchasePage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [warranty, setWarranty] = useState<DurationOrEndDateValue>(INITIAL_WARRANTY);
@@ -371,9 +372,9 @@ export default function AddPurchasePage() {
       ) : null}
 
       <div className={`mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 ${apiKeyMissing ? 'opacity-60' : ''}`}>
-        {/* Upload & Scan */}
-        <section className="rounded-xl border border-dashed border-brand/60 bg-brand-soft/40 p-4">
-          {/* Hidden real file input — triggered by the button below */}
+        {/* Upload & Scan / Take a Photo */}
+        <section className="flex flex-col gap-3 rounded-xl border border-dashed border-brand/60 bg-brand-soft/40 p-4">
+          {/* Hidden file inputs */}
           <input
             ref={fileInputRef}
             type="file"
@@ -384,36 +385,69 @@ export default function AddPurchasePage() {
             tabIndex={-1}
             aria-hidden="true"
           />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleReceiptChange}
+            disabled={isScanning || isSaving}
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
 
-          <div className="flex flex-col gap-3">
-            <div>
-              <p className="text-sm font-medium text-slate-200">Upload & Scan</p>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Photo or PDF — store, amount, and date auto-fill.
-              </p>
-            </div>
-            <button
-              type="button"
-              disabled={isScanning || isSaving || apiKeyMissing}
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover disabled:opacity-60"
-            >
-              {isScanning ? (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
-                  />
-                  Scanning…
-                </>
-              ) : (
-                'Upload & Scan'
-              )}
-            </button>
+          <div>
+            <p className="text-sm font-medium text-slate-200">Scan a Receipt</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Upload a file or take a photo to auto-fill store, amount, and date.
+            </p>
           </div>
 
+          <button
+            type="button"
+            disabled={isScanning || isSaving || apiKeyMissing}
+            onClick={() => fileInputRef.current?.click()}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover disabled:opacity-60"
+          >
+            {isScanning ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                />
+                Scanning…
+              </>
+            ) : (
+              'Upload & Scan'
+            )}
+          </button>
+
+          <button
+            type="button"
+            disabled={isScanning || isSaving || apiKeyMissing}
+            onClick={() => cameraInputRef.current?.click()}
+            className="flex w-full items-center justify-center gap-2 rounded-md border border-brand px-4 py-2 text-sm font-semibold text-brand-hover hover:bg-brand hover:text-white disabled:opacity-60"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-4 w-4"
+              aria-hidden="true"
+            >
+              <path d="M12 9a3.75 3.75 0 1 0 0 7.5A3.75 3.75 0 0 0 12 9Z" />
+              <path
+                fillRule="evenodd"
+                d="M9.344 3.071a49.52 49.52 0 0 1 5.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 0 1-3 3h-15a3 3 0 0 1-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 0 0 1.11-.71l.822-1.315a2.942 2.942 0 0 1 2.332-1.39ZM6.75 12.75a5.25 5.25 0 1 1 10.5 0 5.25 5.25 0 0 1-10.5 0Zm12-1.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Take a Photo
+          </button>
+
           {previewUrl ? (
-            <div className="mt-3 flex items-start gap-3">
+            <div className="flex items-start gap-3">
               <button
                 type="button"
                 aria-label="View full size"
@@ -451,7 +485,7 @@ export default function AddPurchasePage() {
               </div>
             </div>
           ) : !isScanning && scanNotice ? (
-            <p className="mt-3 text-sm text-slate-300">{scanNotice}</p>
+            <p className="text-sm text-slate-300">{scanNotice}</p>
           ) : null}
         </section>
 
