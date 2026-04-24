@@ -8,7 +8,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MissingApiKeyError, pdfFirstPageToBlob, scanReceipt } from '@/application/receiptScanner';
+import { MissingApiKeyError, pdfFirstPageToBlob, scanReceipt, scanReceiptText } from '@/application/receiptScanner';
 import { documentRepository } from '@/data/repositories';
 import { hasApiKey } from '@/services/settings/apiKey';
 import { getSuggestion, updateFromUser, type Suggestion } from '@/application/suggestions';
@@ -81,6 +81,9 @@ export default function AddPurchasePage() {
   const [errors, setErrors] = useState<PurchaseValidationErrors>({});
   const [isScanning, setIsScanning] = useState(false);
   const [scanNotice, setScanNotice] = useState<string | null>(null);
+  const [pasteText, setPasteText] = useState('');
+  const [isPasting, setIsPasting] = useState(false);
+  const [pasteNotice, setPasteNotice] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -186,6 +189,42 @@ export default function AddPurchasePage() {
     } finally {
       setIsScanning(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  async function handlePasteExtract() {
+    const text = pasteText.trim();
+    if (!text) return;
+    if (!hasApiKey()) {
+      setApiKeyMissing(true);
+      return;
+    }
+    setIsPasting(true);
+    setPasteNotice(null);
+    try {
+      const data = await scanReceiptText(text);
+      setForm((prev) => ({
+        ...prev,
+        storeName: prev.storeName || data.storeName,
+        price: prev.price || String(data.amount),
+        purchaseDate: toISODate(data.date),
+      }));
+      setPasteNotice(
+        `Extracted ${data.storeName} · ${data.amount} SAR · ${toISODate(data.date)}.`
+      );
+      setPasteText('');
+    } catch (err) {
+      if (err instanceof MissingApiKeyError) {
+        setApiKeyMissing(true);
+      } else {
+        setPasteNotice(
+          err instanceof Error
+            ? err.message
+            : 'Could not extract from text. Please enter details manually.'
+        );
+      }
+    } finally {
+      setIsPasting(false);
     }
   }
 
@@ -331,92 +370,130 @@ export default function AddPurchasePage() {
         </div>
       ) : null}
 
-      <section
-        className={`mb-6 rounded-xl border border-dashed border-brand/60 bg-brand-soft/40 p-4 ${
-          apiKeyMissing ? 'opacity-60' : ''
-        }`}
-      >
-        {/* Hidden real file input — triggered by the button below */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,application/pdf"
-          onChange={handleReceiptChange}
-          disabled={isScanning || isSaving}
-          className="sr-only"
-          tabIndex={-1}
-          aria-hidden="true"
-        />
+      <div className={`mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 ${apiKeyMissing ? 'opacity-60' : ''}`}>
+        {/* Upload & Scan */}
+        <section className="rounded-xl border border-dashed border-brand/60 bg-brand-soft/40 p-4">
+          {/* Hidden real file input — triggered by the button below */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            onChange={handleReceiptChange}
+            disabled={isScanning || isSaving}
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3">
+            <div>
+              <p className="text-sm font-medium text-slate-200">Upload & Scan</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Photo or PDF — store, amount, and date auto-fill.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={isScanning || isSaving || apiKeyMissing}
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover disabled:opacity-60"
+            >
+              {isScanning ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                  />
+                  Scanning…
+                </>
+              ) : (
+                'Upload & Scan'
+              )}
+            </button>
+          </div>
+
+          {previewUrl ? (
+            <div className="mt-3 flex items-start gap-3">
+              <button
+                type="button"
+                aria-label="View full size"
+                onClick={() => { setIsLightboxOpen(true); setZoomScale(1); }}
+                className="group relative overflow-hidden rounded-lg border border-slate-700 bg-surface transition-colors hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand/50"
+              >
+                {previewType === 'image' ? (
+                  <img
+                    src={previewUrl}
+                    alt="Receipt preview"
+                    className="h-20 w-20 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 flex-col items-center justify-center gap-1 text-slate-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-rose-400">
+                      <path d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a1.875 1.875 0 0 1-1.875-1.875V5.25A3.75 3.75 0 0 0 9 1.5H5.625Z" />
+                      <path d="M12.971 1.816A5.23 5.23 0 0 1 14.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 0 1 3.434 1.279 9.768 9.768 0 0 0-6.963-6.963Z" />
+                    </svg>
+                    <span className="text-xs font-medium">PDF</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-white">
+                    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                    <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 0 1 0-1.113ZM17.25 12a5.25 5.25 0 1 1-10.5 0 5.25 5.25 0 0 1 10.5 0Z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </button>
+              <div className="flex-1">
+                {scanNotice ? (
+                  <p className="text-sm text-slate-300">{scanNotice}</p>
+                ) : (
+                  <p className="text-xs text-slate-500">Tap the thumbnail to zoom in.</p>
+                )}
+              </div>
+            </div>
+          ) : !isScanning && scanNotice ? (
+            <p className="mt-3 text-sm text-slate-300">{scanNotice}</p>
+          ) : null}
+        </section>
+
+        {/* Paste Receipt Message */}
+        <section className="flex flex-col gap-3 rounded-xl border border-dashed border-brand/60 bg-brand-soft/40 p-4">
           <div>
-            <p className="text-sm font-medium text-slate-200">Scan a receipt</p>
+            <p className="text-sm font-medium text-slate-200">Paste Receipt Message</p>
             <p className="mt-0.5 text-xs text-slate-500">
-              Accepts photos or PDF — store, amount and date are filled in automatically.
+              Paste text from an email or SMS receipt to auto-fill the form.
             </p>
           </div>
+          <textarea
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            disabled={isPasting || isSaving || apiKeyMissing}
+            placeholder="Paste your receipt text here…"
+            rows={4}
+            className="block w-full resize-none rounded-md border border-slate-700 bg-surface px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60"
+          />
           <button
             type="button"
-            disabled={isScanning || isSaving || apiKeyMissing}
-            onClick={() => fileInputRef.current?.click()}
-            className="inline-flex shrink-0 items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover disabled:opacity-60"
+            disabled={isPasting || isSaving || apiKeyMissing || !pasteText.trim()}
+            onClick={() => void handlePasteExtract()}
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover disabled:opacity-60"
           >
-            {isScanning ? (
+            {isPasting ? (
               <>
                 <span
                   aria-hidden="true"
                   className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
                 />
-                Scanning…
+                Extracting…
               </>
             ) : (
-              'Upload & Scan'
+              'Extract'
             )}
           </button>
-        </div>
-
-        {previewUrl ? (
-          <div className="mt-3 flex items-start gap-3">
-            <button
-              type="button"
-              aria-label="View full size"
-              onClick={() => { setIsLightboxOpen(true); setZoomScale(1); }}
-              className="group relative overflow-hidden rounded-lg border border-slate-700 bg-surface transition-colors hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand/50"
-            >
-              {previewType === 'image' ? (
-                <img
-                  src={previewUrl}
-                  alt="Receipt preview"
-                  className="h-20 w-20 object-cover"
-                />
-              ) : (
-                <div className="flex h-20 w-20 flex-col items-center justify-center gap-1 text-slate-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-rose-400">
-                    <path d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a1.875 1.875 0 0 1-1.875-1.875V5.25A3.75 3.75 0 0 0 9 1.5H5.625Z" />
-                    <path d="M12.971 1.816A5.23 5.23 0 0 1 14.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 0 1 3.434 1.279 9.768 9.768 0 0 0-6.963-6.963Z" />
-                  </svg>
-                  <span className="text-xs font-medium">PDF</span>
-                </div>
-              )}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-white">
-                  <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-                  <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 0 1 0-1.113ZM17.25 12a5.25 5.25 0 1 1-10.5 0 5.25 5.25 0 0 1 10.5 0Z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </button>
-            <div className="flex-1">
-              {scanNotice ? (
-                <p className="text-sm text-slate-300">{scanNotice}</p>
-              ) : (
-                <p className="text-xs text-slate-500">Tap the thumbnail to zoom in.</p>
-              )}
-            </div>
-          </div>
-        ) : !isScanning && scanNotice ? (
-          <p className="mt-3 text-sm text-slate-300">{scanNotice}</p>
-        ) : null}
-      </section>
+          {pasteNotice ? (
+            <p className="text-sm text-slate-300">{pasteNotice}</p>
+          ) : null}
+        </section>
+      </div>
 
       {isLightboxOpen && previewUrl ? (
         <div

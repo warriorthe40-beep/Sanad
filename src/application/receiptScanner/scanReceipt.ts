@@ -112,8 +112,42 @@ export async function scanReceipt(
     ],
   });
 
-  const textBlock = response.content.find((block) => block.type === 'text');
-  if (!textBlock || textBlock.type !== 'text') {
+  return parseReceiptResponse(response.content);
+}
+
+export async function scanReceiptText(text: string): Promise<ScannedReceiptData> {
+  const client = createAnthropicClient();
+
+  const response = await client.messages.create({
+    model: 'claude-opus-4-7',
+    max_tokens: 1024,
+    output_config: {
+      format: {
+        type: 'json_schema',
+        schema: RECEIPT_SCHEMA,
+      },
+    },
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: `${RECEIPT_EXTRACTION_PROMPT}\n\nReceipt text:\n${text}`,
+          },
+        ],
+      },
+    ],
+  });
+
+  return parseReceiptResponse(response.content);
+}
+
+function parseReceiptResponse(
+  content: Array<{ type: string; text?: string }>
+): ScannedReceiptData {
+  const textBlock = content.find((block) => block.type === 'text');
+  if (!textBlock || textBlock.type !== 'text' || !textBlock.text) {
     throw new Error('Claude returned no text content.');
   }
 
