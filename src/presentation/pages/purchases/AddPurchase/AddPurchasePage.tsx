@@ -23,6 +23,7 @@ import DurationOrEndDateField, {
   toEndDate,
   type DurationOrEndDateValue,
 } from '@/presentation/components/DurationOrEndDateField';
+import StoreAutocomplete from '@/presentation/components/StoreAutocomplete';
 
 /**
  * AddPurchasePage — full "Add Purchase with AI Receipt Scanning" flow from the
@@ -95,6 +96,26 @@ export default function AddPurchasePage() {
   const [zoomScale, setZoomScale] = useState(1);
   const previewObjectUrl = useRef<string | null>(null);
   const uploadedFile = useRef<File | null>(null);
+  const [storeHistory, setStoreHistory] = useState<string[]>([]);
+
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    if (!userId) return;
+    purchaseRepository
+      .getByUserId(userId)
+      .then((purchases) => {
+        const counts = new Map<string, number>();
+        for (const p of purchases) {
+          counts.set(p.storeName, (counts.get(p.storeName) ?? 0) + 1);
+        }
+        setStoreHistory(
+          [...counts.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([name]) => name)
+        );
+      })
+      .catch(() => {});
+  }, []);
 
   // Steps 7–8: re-fetch the community suggestion whenever the
   // (store, category) pair becomes complete.
@@ -135,6 +156,12 @@ export default function AddPurchasePage() {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
+    setSaveError(null);
+  }
+
+  function handleStoreChange(value: string) {
+    setForm((prev) => ({ ...prev, storeName: value }));
+    setErrors((prev) => ({ ...prev, storeName: undefined }));
     setSaveError(null);
   }
 
@@ -626,16 +653,25 @@ export default function AddPurchasePage() {
           disabled={isSaving}
         />
 
-        <Field
-          label="Store"
-          name="storeName"
-          value={form.storeName}
-          onChange={handleChange}
-          required
-          disabled={isSaving}
-          error={errors.storeName}
-          placeholder="e.g. Jarir"
-        />
+        <div>
+          <label
+            htmlFor="storeName"
+            className="mb-1 block text-sm font-medium text-slate-200"
+          >
+            Store <span className="text-rose-600">*</span>
+          </label>
+          <StoreAutocomplete
+            value={form.storeName}
+            onChange={handleStoreChange}
+            storeHistory={storeHistory}
+            disabled={isSaving}
+            hasError={Boolean(errors.storeName)}
+            placeholder="e.g. Jarir"
+          />
+          {errors.storeName ? (
+            <p className="mt-1 text-xs text-rose-600">{errors.storeName}</p>
+          ) : null}
+        </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-200">

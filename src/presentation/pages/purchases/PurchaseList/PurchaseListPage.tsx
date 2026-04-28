@@ -256,7 +256,6 @@ export default function PurchaseListPage() {
         </>
       )}
 
-      <QuickAddFab />
     </div>
   );
 }
@@ -378,18 +377,3 @@ function NoMatches({ onReset }: { onReset: () => void }) {
   );
 }
 
-/**
- * Floating Quick Add button. Fixed bottom-right on every screen size so it
- * stays reachable on mobile. Uses `aria-label` because the icon alone isn't
- * readable by a screen reader.
- */
-function QuickAddFab() {
-  return (
-    <Link
-      to="/purchases/new/quick"
-      className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-brand-hover hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-brand/50"
-    >
-      Quick Add
-    </Link>
-  );
-}

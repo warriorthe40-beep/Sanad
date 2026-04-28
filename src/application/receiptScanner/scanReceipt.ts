@@ -7,16 +7,14 @@ export { MissingApiKeyError } from '@/services/anthropic/anthropicClient';
  * AI receipt scanning, implementing steps 3–5 of the sequence diagram
  * (:ReceiptScanner → :AnthropicAPI).
  *
- * Calls Claude's Vision API with the receipt image (or PDF) and a JSON-schema
- * structured-output constraint so we get a typed `{storeName, amount,
- * date}` payload rather than free-form prose to parse. If the user
- * hasn't configured an API key, we throw `MissingApiKeyError` — the UI
- * surfaces this as a "add your key in Settings" banner rather than
- * falling back to a mock.
+ * Calls Claude's Vision API with the receipt image (or PDF) and returns
+ * a typed `{storeName, amount, date}` payload. If the user hasn't
+ * configured an API key, we throw `MissingApiKeyError` — the UI surfaces
+ * this as a "add your key in Settings" banner rather than falling back
+ * to a mock.
  *
- * We use Opus 4.7 because this release ships high-resolution vision
- * (up to 2576px long edge) and measurable gains on natural-image
- * detection — both matter for receipt legibility.
+ * We use claude-3-5-sonnet for speed and lower token cost while still
+ * supporting vision and text extraction.
  */
 const SUPPORTED_IMAGE_MEDIA_TYPES = new Set([
   'image/jpeg',
@@ -34,31 +32,10 @@ const RECEIPT_EXTRACTION_PROMPT =
   'Extract the store name, total paid, and purchase date from this receipt. ' +
   'Use the total (final amount charged), not any subtotal. ' +
   'If multiple currencies appear, report the amount in the dominant one as a plain number. ' +
-  'If you cannot find a field with reasonable confidence, omit it.';
-
-const RECEIPT_SCHEMA = {
-  type: 'object',
-  properties: {
-    storeName: {
-      type: 'string',
-      description: 'The name of the store or merchant shown on the receipt.',
-    },
-    amount: {
-      type: 'number',
-      description: 'The total amount paid, as a plain number without a currency symbol.',
-    },
-    date: {
-      type: 'string',
-      description: 'The purchase date in ISO format (YYYY-MM-DD).',
-    },
-    confidence: {
-      type: 'number',
-      description: 'Self-reported confidence in the extraction, between 0 and 1.',
-    },
-  },
-  required: ['storeName', 'amount', 'date'],
-  additionalProperties: false,
-} as const;
+  'If you cannot find a field with reasonable confidence, omit it. ' +
+  'Return ONLY valid JSON matching this shape: ' +
+  '{"storeName":"<string>","amount":<number>,"date":"<YYYY-MM-DD>","confidence":<0-1>}. ' +
+  'No explanation, no markdown — just the JSON object.';
 
 interface ExtractedReceipt {
   storeName: string;
@@ -93,14 +70,8 @@ export async function scanReceipt(
         } as const);
 
   const response = await client.messages.create({
-    model: 'claude-opus-4-7',
-    max_tokens: 1024,
-    output_config: {
-      format: {
-        type: 'json_schema',
-        schema: RECEIPT_SCHEMA,
-      },
-    },
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 256,
     messages: [
       {
         role: 'user',
@@ -119,14 +90,8 @@ export async function scanReceiptText(text: string): Promise<ScannedReceiptData>
   const client = createAnthropicClient();
 
   const response = await client.messages.create({
-    model: 'claude-opus-4-7',
-    max_tokens: 1024,
-    output_config: {
-      format: {
-        type: 'json_schema',
-        schema: RECEIPT_SCHEMA,
-      },
-    },
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 256,
     messages: [
       {
         role: 'user',
