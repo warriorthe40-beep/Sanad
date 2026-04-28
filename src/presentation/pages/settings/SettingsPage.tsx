@@ -35,7 +35,7 @@ export default function SettingsPage() {
     if (!trimmed.startsWith('sk-ant-')) {
       setFeedback({
         kind: 'error',
-        text: 'That doesn't look like an Anthropic key. It should start with "sk-ant-".',
+        text: "That doesn't look like an Anthropic key. It should start with \"sk-ant-\".",
       });
       return;
     }
