@@ -5,20 +5,22 @@ import {
   maskApiKey,
   setApiKey,
 } from '@/services/settings/apiKey';
+import { purchaseRepository, documentRepository } from '@/data/repositories';
+import { getCurrentUserId } from '@/shared/utils/currentUser';
 
 /**
- * SettingsPage — user-managed configuration.
- *
- * The only setting for now is the Anthropic API key that powers the
- * AI Receipt Scanning feature. The key is stored in localStorage and
- * used by the browser-side Anthropic SDK client; this page discloses
- * that tradeoff so the user can make an informed decision about the
- * security boundary.
+ * SettingsPage — user-managed configuration: Anthropic API key and data export.
  */
 export default function SettingsPage() {
   const [savedKey, setSavedKey] = useState<string | null>(() => getApiKey());
   const [draft, setDraft] = useState('');
   const [feedback, setFeedback] = useState<{
+    kind: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportFeedback, setExportFeedback] = useState<{
     kind: 'success' | 'error';
     text: string;
   } | null>(null);
@@ -33,7 +35,7 @@ export default function SettingsPage() {
     if (!trimmed.startsWith('sk-ant-')) {
       setFeedback({
         kind: 'error',
-        text: 'That doesn’t look like an Anthropic key. It should start with "sk-ant-".',
+        text: 'That doesn't look like an Anthropic key. It should start with "sk-ant-".',
       });
       return;
     }
@@ -50,6 +52,113 @@ export default function SettingsPage() {
     setFeedback({ kind: 'success', text: 'API key removed.' });
   }
 
+  async function handleExportJSON() {
+    setIsExporting(true);
+    setExportFeedback(null);
+    try {
+      const userId = getCurrentUserId();
+      const purchases = await purchaseRepository.getByUserId(userId);
+
+      const purchasesWithDocs = await Promise.all(
+        purchases.map(async (p) => {
+          const docs = await documentRepository.getByPurchaseId(p.id);
+          return {
+            id: p.id,
+            storeName: p.storeName,
+            categoryName: p.categoryName,
+            productName: p.productName ?? null,
+            price: p.price,
+            purchaseDate: p.purchaseDate.toISOString().slice(0, 10),
+            warrantyDuration: p.warrantyDuration ?? null,
+            warrantyEndDate: p.warrantyEndDate?.toISOString().slice(0, 10) ?? null,
+            returnWindow: p.returnWindow ?? null,
+            returnEndDate: p.returnEndDate?.toISOString().slice(0, 10) ?? null,
+            notes: p.notes ?? null,
+            documents: docs.map((d) => ({
+              id: d.id,
+              type: d.type,
+              uploadDate: d.uploadDate.toISOString().slice(0, 10),
+              imageData: d.imageData,
+            })),
+          };
+        })
+      );
+
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        purchaseCount: purchases.length,
+        purchases: purchasesWithDocs,
+      };
+
+      triggerDownload(
+        new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
+        `sanad-export-${todayISO()}.json`
+      );
+      setExportFeedback({
+        kind: 'success',
+        text: `${purchases.length} purchase${purchases.length === 1 ? '' : 's'} exported.`,
+      });
+    } catch (err) {
+      setExportFeedback({
+        kind: 'error',
+        text: err instanceof Error ? err.message : 'Export failed.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleExportCSV() {
+    setIsExporting(true);
+    setExportFeedback(null);
+    try {
+      const userId = getCurrentUserId();
+      const purchases = await purchaseRepository.getByUserId(userId);
+
+      const headers = [
+        'ID', 'Store', 'Category', 'Product Name', 'Price (SAR)',
+        'Purchase Date', 'Warranty Duration', 'Warranty End Date',
+        'Return Window', 'Return End Date', 'Notes',
+      ];
+      const rows = purchases.map((p) => [
+        p.id,
+        p.storeName,
+        p.categoryName,
+        p.productName ?? '',
+        String(p.price),
+        p.purchaseDate.toISOString().slice(0, 10),
+        p.warrantyDuration ?? '',
+        p.warrantyEndDate?.toISOString().slice(0, 10) ?? '',
+        p.returnWindow ?? '',
+        p.returnEndDate?.toISOString().slice(0, 10) ?? '',
+        p.notes ?? '',
+      ]);
+
+      const csv = [headers, ...rows]
+        .map((row) =>
+          row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+        )
+        .join('\r\n');
+
+      // BOM prefix ensures Arabic / Unicode characters render correctly in Excel
+      triggerDownload(
+        new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }),
+        `sanad-export-${todayISO()}.csv`
+      );
+      setExportFeedback({
+        kind: 'success',
+        text: `${purchases.length} purchase${purchases.length === 1 ? '' : 's'} exported.`,
+      });
+    } catch (err) {
+      setExportFeedback({
+        kind: 'error',
+        text: err instanceof Error ? err.message : 'Export failed.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-8">
       <header className="mb-6">
@@ -59,6 +168,7 @@ export default function SettingsPage() {
         </p>
       </header>
 
+      {/* Anthropic API key */}
       <section className="rounded-xl border border-slate-700 bg-surface p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -158,6 +268,56 @@ export default function SettingsPage() {
           </p>
         </div>
       </section>
+
+      {/* Export My Data */}
+      <section className="mt-6 rounded-xl border border-slate-700 bg-surface p-5 sm:p-6">
+        <h2 className="text-base font-semibold text-slate-100">Export my data</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Download all your purchases as a local backup. JSON includes attached
+          receipt images; CSV is a plain spreadsheet without images.
+        </p>
+
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => void handleExportJSON()}
+            disabled={isExporting}
+            className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover disabled:opacity-60"
+          >
+            {isExporting ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                />
+                Preparing…
+              </>
+            ) : (
+              'Export as JSON'
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleExportCSV()}
+            disabled={isExporting}
+            className="inline-flex items-center gap-2 rounded-md border border-slate-700 bg-surface px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-surface-elevated disabled:opacity-60"
+          >
+            Export as CSV
+          </button>
+        </div>
+
+        {exportFeedback ? (
+          <p
+            className={`mt-3 text-xs ${
+              exportFeedback.kind === 'success'
+                ? 'text-emerald-400'
+                : 'text-rose-400'
+            }`}
+          >
+            {exportFeedback.text}
+          </p>
+        ) : null}
+      </section>
     </div>
   );
 }
@@ -175,4 +335,20 @@ function StatusBadge({ saved }: { saved: boolean }) {
       Not configured
     </span>
   );
+}
+
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

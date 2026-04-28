@@ -27,6 +27,9 @@ import { formatCurrency } from '@/shared/utils/formatting';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+const ALL_CATEGORIES = '__all__';
+const ALL_STORES = '__all__';
+
 type ViewType = 'day' | 'month' | 'year' | 'custom';
 
 const VIEW_LABELS: Record<ViewType, string> = {
@@ -180,13 +183,17 @@ export default function AnalyticsPage() {
   const [purchases, setPurchases] = useState<Purchase[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Filter state
+  // Date filter state
   const [viewType, setViewType] = useState<ViewType>('month');
   const [selectedDay, setSelectedDay] = useState(todayISO);
   const [selectedMonth, setSelectedMonth] = useState(currentMonthISO);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [customStart, setCustomStart] = useState(firstOfMonthISO);
   const [customEnd, setCustomEnd] = useState(todayISO);
+
+  // Secondary dimension filters
+  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES);
+  const [selectedStore, setSelectedStore] = useState(ALL_STORES);
 
   useEffect(() => {
     let cancelled = false;
@@ -214,21 +221,50 @@ export default function AnalyticsPage() {
     [viewType, bounds],
   );
 
-  // Purchases in the selected window — drives Total, Pie, and Area
-  const filteredPurchases = useMemo(
+  // Purchases in the selected date window
+  const filteredByDate = useMemo(
     () => (purchases ? filterByDateRange(purchases, bounds.start, bounds.end) : []),
     [purchases, bounds],
+  );
+
+  // Available dimension options (derived from the date-filtered set)
+  const availableCategories = useMemo(
+    () => [...new Set(filteredByDate.map((p) => p.categoryName))].sort(),
+    [filteredByDate],
+  );
+  const availableStores = useMemo(
+    () => [...new Set(filteredByDate.map((p) => p.storeName))].sort(),
+    [filteredByDate],
+  );
+
+  // Apply category + store filters on top of the date filter
+  const filteredPurchases = useMemo(() => {
+    let result = filteredByDate;
+    if (selectedCategory !== ALL_CATEGORIES)
+      result = result.filter((p) => p.categoryName === selectedCategory);
+    if (selectedStore !== ALL_STORES)
+      result = result.filter((p) => p.storeName === selectedStore);
+    return result;
+  }, [filteredByDate, selectedCategory, selectedStore]);
+
+  const hasSecondaryFilter =
+    selectedCategory !== ALL_CATEGORIES || selectedStore !== ALL_STORES;
+
+  // date-range total (always reflects the period, unaffected by category/store)
+  const dateRangeTotal = useMemo(
+    () => filteredByDate.reduce((s, p) => s + p.price, 0),
+    [filteredByDate],
+  );
+  // filtered subset total (after category + store)
+  const filteredTotal = useMemo(
+    () => filteredPurchases.reduce((s, p) => s + p.price, 0),
+    [filteredPurchases],
   );
 
   // All-time summary for warranty coverage only
   const allTimeSummary = useMemo(
     () => computeAnalytics(purchases ?? []),
     [purchases],
-  );
-
-  const filteredTotal = useMemo(
-    () => filteredPurchases.reduce((s, p) => s + p.price, 0),
-    [filteredPurchases],
   );
 
   const categoryRows = useMemo(() => {
@@ -276,72 +312,111 @@ export default function AnalyticsPage() {
       ) : (
         <>
           {/* ── Filter bar ── */}
-          <section className="mb-6 flex flex-wrap items-center gap-3">
-            <div className="inline-flex overflow-hidden rounded-md border border-slate-700 text-sm">
-              {(Object.keys(VIEW_LABELS) as ViewType[]).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setViewType(v)}
-                  className={`px-3 py-1.5 font-medium transition ${
-                    viewType === v
-                      ? 'bg-brand text-white'
-                      : 'text-slate-300 hover:bg-surface-elevated'
-                  }`}
+          <section className="mb-6 space-y-3">
+            {/* Date range row */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="inline-flex overflow-hidden rounded-md border border-slate-700 text-sm">
+                {(Object.keys(VIEW_LABELS) as ViewType[]).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setViewType(v)}
+                    className={`px-3 py-1.5 font-medium transition ${
+                      viewType === v
+                        ? 'bg-brand text-white'
+                        : 'text-slate-300 hover:bg-surface-elevated'
+                    }`}
+                  >
+                    {VIEW_LABELS[v]}
+                  </button>
+                ))}
+              </div>
+
+              {viewType === 'day' && (
+                <input
+                  type="date"
+                  value={selectedDay}
+                  max={todayISO()}
+                  onChange={(e) => setSelectedDay(e.target.value)}
+                  className={PICKER_CLASS}
+                />
+              )}
+              {viewType === 'month' && (
+                <input
+                  type="month"
+                  value={selectedMonth}
+                  max={currentMonthISO()}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className={PICKER_CLASS}
+                />
+              )}
+              {viewType === 'year' && (
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className={PICKER_CLASS}
                 >
-                  {VIEW_LABELS[v]}
-                </button>
-              ))}
+                  {years.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              )}
+              {viewType === 'custom' && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="date"
+                    value={customStart}
+                    max={customEnd}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                    className={PICKER_CLASS}
+                  />
+                  <span className="text-sm text-slate-500">→</span>
+                  <input
+                    type="date"
+                    value={customEnd}
+                    max={todayISO()}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                    className={PICKER_CLASS}
+                  />
+                </div>
+              )}
             </div>
 
-            {viewType === 'day' && (
-              <input
-                type="date"
-                value={selectedDay}
-                max={todayISO()}
-                onChange={(e) => setSelectedDay(e.target.value)}
-                className={PICKER_CLASS}
-              />
-            )}
-            {viewType === 'month' && (
-              <input
-                type="month"
-                value={selectedMonth}
-                max={currentMonthISO()}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className={PICKER_CLASS}
-              />
-            )}
-            {viewType === 'year' && (
+            {/* Category + store dimension filters */}
+            <div className="flex flex-wrap items-center gap-3">
               <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
                 className={PICKER_CLASS}
               >
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}</option>
+                <option value={ALL_CATEGORIES}>All categories</option>
+                {availableCategories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
-            )}
-            {viewType === 'custom' && (
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="date"
-                  value={customStart}
-                  max={customEnd}
-                  onChange={(e) => setCustomStart(e.target.value)}
-                  className={PICKER_CLASS}
-                />
-                <span className="text-sm text-slate-500">→</span>
-                <input
-                  type="date"
-                  value={customEnd}
-                  max={todayISO()}
-                  onChange={(e) => setCustomEnd(e.target.value)}
-                  className={PICKER_CLASS}
-                />
-              </div>
-            )}
+              <select
+                value={selectedStore}
+                onChange={(e) => setSelectedStore(e.target.value)}
+                className={PICKER_CLASS}
+              >
+                <option value={ALL_STORES}>All stores</option>
+                {availableStores.map((store) => (
+                  <option key={store} value={store}>{store}</option>
+                ))}
+              </select>
+              {hasSecondaryFilter ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory(ALL_CATEGORIES);
+                    setSelectedStore(ALL_STORES);
+                  }}
+                  className="text-xs text-slate-400 hover:text-slate-200"
+                >
+                  × Clear filters
+                </button>
+              ) : null}
+            </div>
           </section>
 
           {/* ── Stats row ── */}
@@ -351,11 +426,18 @@ export default function AnalyticsPage() {
                 Total spending
               </p>
               <p className="mt-2 text-2xl font-semibold text-slate-100">
-                {formatCurrency(filteredTotal, 2)}
+                {formatCurrency(dateRangeTotal, 2)}
               </p>
+              {hasSecondaryFilter ? (
+                <p className="mt-1 text-sm font-medium text-brand-hover">
+                  {formatCurrency(filteredTotal, 2)}{' '}
+                  <span className="text-xs font-normal text-slate-400">filtered</span>
+                </p>
+              ) : null}
               <p className="mt-1 text-xs text-slate-500">
-                {filteredPurchases.length} purchase{filteredPurchases.length === 1 ? '' : 's'}
-                {' · '}{period}
+                {hasSecondaryFilter
+                  ? `${filteredPurchases.length} of ${filteredByDate.length} purchases · ${period}`
+                  : `${filteredByDate.length} purchase${filteredByDate.length === 1 ? '' : 's'} · ${period}`}
               </p>
             </div>
             <div className="rounded-xl border border-slate-700 bg-surface p-4">
@@ -366,7 +448,9 @@ export default function AnalyticsPage() {
                 {categoryRows.length}
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                Distinct categories in this period
+                {hasSecondaryFilter
+                  ? 'In filtered selection'
+                  : 'Distinct categories in this period'}
               </p>
             </div>
           </section>
