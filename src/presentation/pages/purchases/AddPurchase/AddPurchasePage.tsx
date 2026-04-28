@@ -15,7 +15,7 @@ import { getSuggestion, updateFromUser, type Suggestion } from '@/application/su
 import { calculateWarrantyEndDate, scheduleAlerts } from '@/application/warranty';
 import { validatePurchase, type PurchaseValidationErrors } from '@/application/validation';
 import { purchaseRepository } from '@/data/repositories';
-import { DEFAULT_CATEGORIES } from '@/shared/constants/categories';
+import { useCategories } from '@/presentation/hooks/useCategories';
 import { getCurrentUserId } from '@/shared/utils/currentUser';
 import DurationOrEndDateField, {
   fromPurchase,
@@ -73,6 +73,7 @@ const INITIAL_RETURN: DurationOrEndDateValue = { mode: 'none' };
 
 export default function AddPurchasePage() {
   const navigate = useNavigate();
+  const categories = useCategories();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -685,7 +686,7 @@ export default function AddPurchasePage() {
             className={selectClass(Boolean(errors.categoryName))}
           >
             <option value="">Select a category</option>
-            {DEFAULT_CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
               </option>

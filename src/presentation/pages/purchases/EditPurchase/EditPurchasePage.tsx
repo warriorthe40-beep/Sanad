@@ -9,7 +9,7 @@ import type { Purchase } from '@/data/models';
 import { alertRepository, purchaseRepository } from '@/data/repositories';
 import { calculateWarrantyEndDate, scheduleAlerts } from '@/application/warranty';
 import { validatePurchase, type PurchaseValidationErrors } from '@/application/validation';
-import { DEFAULT_CATEGORIES } from '@/shared/constants/categories';
+import { useCategories } from '@/presentation/hooks/useCategories';
 import DurationOrEndDateField, {
   fromPurchase,
   toDurationString,
@@ -58,6 +58,7 @@ function purchaseToForm(p: Purchase): FormState {
 export default function EditPurchasePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const categories = useCategories();
 
   const [purchase, setPurchase] = useState<Purchase | null | undefined>(undefined);
   const [form, setForm] = useState<FormState | null>(null);
@@ -269,7 +270,7 @@ export default function EditPurchasePage() {
             className={inputClass(Boolean(errors.categoryName))}
           >
             <option value="">Select a category</option>
-            {DEFAULT_CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
               </option>

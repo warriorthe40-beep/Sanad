@@ -8,7 +8,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { purchaseRepository } from '@/data/repositories';
 import { validatePurchase, type PurchaseValidationErrors } from '@/application/validation';
-import { DEFAULT_CATEGORIES } from '@/shared/constants/categories';
+import { useCategories } from '@/presentation/hooks/useCategories';
 import { getCurrentUserId } from '@/shared/utils/currentUser';
 import {
   MissingApiKeyError,
@@ -33,6 +33,7 @@ const INITIAL_FORM: FormState = {
 
 export default function QuickAddPage() {
   const navigate = useNavigate();
+  const categories = useCategories();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -396,7 +397,7 @@ export default function QuickAddPage() {
             className={inputClass(Boolean(errors.categoryName))}
           >
             <option value="">Select a category</option>
-            {DEFAULT_CATEGORIES.map((category) => (
+            {categories.map((category) => (
               <option key={category} value={category}>
                 {category}
               </option>
