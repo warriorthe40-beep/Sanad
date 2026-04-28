@@ -8,7 +8,6 @@ interface FormState {
   email: string;
   password: string;
   confirm: string;
-  asAdmin: boolean;
 }
 
 const INITIAL: FormState = {
@@ -16,14 +15,9 @@ const INITIAL: FormState = {
   email: '',
   password: '',
   confirm: '',
-  asAdmin: false,
 };
 
-/**
- * RegisterPage — creates a new account via the auth service and signs the
- * user in on success. The "Register as admin" toggle exists to let the
- * prototype demo the admin flows without needing a seeded admin account.
- */
+/** RegisterPage — creates a new user account via Supabase Auth. */
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -52,13 +46,12 @@ export default function RegisterPage() {
     setIsSubmitting(true);
     setError(null);
     try {
-      const user = await register({
+      await register({
         name: form.name,
         email: form.email,
         password: form.password,
-        asAdmin: form.asAdmin,
       });
-      navigate(user.role === 'admin' ? '/admin' : '/purchases', { replace: true });
+      navigate('/purchases', { replace: true });
     } catch (err) {
       setError(
         err instanceof AuthError
@@ -122,23 +115,6 @@ export default function RegisterPage() {
           disabled={isSubmitting}
           required
         />
-
-        <label className="flex items-start gap-2 text-sm text-slate-300">
-          <input
-            type="checkbox"
-            name="asAdmin"
-            checked={form.asAdmin}
-            onChange={handleChange}
-            disabled={isSubmitting}
-            className="mt-0.5 h-4 w-4 rounded border-slate-700 text-brand focus:ring-brand/40"
-          />
-          <span>
-            Register as admin
-            <span className="ml-1 text-xs text-slate-500">
-              (demo — gives access to category and store-policy management)
-            </span>
-          </span>
-        </label>
 
         {error ? (
           <p className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">

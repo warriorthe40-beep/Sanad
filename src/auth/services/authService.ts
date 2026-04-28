@@ -11,7 +11,6 @@ export interface RegisterInput {
   name: string;
   email: string;
   password: string;
-  asAdmin?: boolean;
 }
 
 export interface LoginInput {
@@ -52,7 +51,7 @@ export async function register(input: RegisterInput): Promise<AuthUser> {
     options: {
       data: {
         name,
-        role: input.asAdmin ? 'admin' : 'user',
+        role: 'user',
       },
     },
   });
