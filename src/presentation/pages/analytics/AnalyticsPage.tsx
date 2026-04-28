@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Area,
@@ -384,26 +384,20 @@ export default function AnalyticsPage() {
 
             {/* Category + store dimension filters */}
             <div className="flex flex-wrap items-center gap-3">
-              <select
+              <FilterCombobox
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className={PICKER_CLASS}
-              >
-                <option value={ALL_CATEGORIES}>All categories</option>
-                {availableCategories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-              <select
+                onChange={setSelectedCategory}
+                options={availableCategories}
+                allValue={ALL_CATEGORIES}
+                placeholder="All categories"
+              />
+              <FilterCombobox
                 value={selectedStore}
-                onChange={(e) => setSelectedStore(e.target.value)}
-                className={PICKER_CLASS}
-              >
-                <option value={ALL_STORES}>All stores</option>
-                {availableStores.map((store) => (
-                  <option key={store} value={store}>{store}</option>
-                ))}
-              </select>
+                onChange={setSelectedStore}
+                options={availableStores}
+                allValue={ALL_STORES}
+                placeholder="All stores"
+              />
               {hasSecondaryFilter ? (
                 <button
                   type="button"
@@ -680,6 +674,135 @@ function EmptyState() {
           Quick add
         </Link>
       </div>
+    </div>
+  );
+}
+
+// ─── Searchable filter combobox ───────────────────────────────────────────────
+
+interface FilterComboboxProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  allValue: string;
+  placeholder: string;
+}
+
+function FilterCombobox({
+  value,
+  onChange,
+  options,
+  allValue,
+  placeholder,
+}: FilterComboboxProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const isFiltered = value !== allValue;
+
+  // Close on outside click
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery('');
+      }
+    }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
+
+  const visible = query
+    ? options.filter((o) => o.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  function handleSelect(v: string) {
+    onChange(v);
+    setOpen(false);
+    setQuery('');
+  }
+
+  function handleFocus() {
+    setOpen(true);
+    setQuery('');
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div
+        className={`flex min-w-[160px] items-center gap-1 rounded-md border px-2 py-1.5 text-xs font-medium focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/40 ${
+          isFiltered
+            ? 'border-brand/60 bg-brand/10 text-slate-100'
+            : 'border-slate-700 bg-surface text-slate-200'
+        }`}
+      >
+        <input
+          ref={inputRef}
+          value={open ? query : isFiltered ? value : ''}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={handleFocus}
+          placeholder={placeholder}
+          className="w-full bg-transparent outline-none placeholder:text-slate-500"
+        />
+        {isFiltered ? (
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onChange(allValue);
+              setQuery('');
+              setOpen(false);
+            }}
+            className="shrink-0 text-slate-400 hover:text-slate-100"
+            aria-label="Clear filter"
+          >
+            ×
+          </button>
+        ) : (
+          <span className="shrink-0 text-slate-500" aria-hidden="true">▾</span>
+        )}
+      </div>
+
+      {open ? (
+        <ul
+          role="listbox"
+          className="absolute z-50 mt-1 max-h-56 w-full min-w-[180px] overflow-auto rounded-md border border-slate-700 bg-surface-elevated shadow-lg"
+        >
+          <li role="option" aria-selected={!isFiltered}>
+            <button
+              type="button"
+              onMouseDown={() => handleSelect(allValue)}
+              className={`w-full px-3 py-2 text-left text-xs ${
+                !isFiltered
+                  ? 'font-semibold text-brand-hover'
+                  : 'text-slate-400 hover:bg-brand/20'
+              }`}
+            >
+              {placeholder}
+            </button>
+          </li>
+          {visible.map((opt) => (
+            <li key={opt} role="option" aria-selected={value === opt}>
+              <button
+                type="button"
+                onMouseDown={() => handleSelect(opt)}
+                className={`w-full px-3 py-2 text-left text-xs ${
+                  value === opt
+                    ? 'bg-brand/20 font-medium text-slate-100'
+                    : 'text-slate-300 hover:bg-brand/20'
+                }`}
+              >
+                {opt}
+              </button>
+            </li>
+          ))}
+          {visible.length === 0 ? (
+            <li className="px-3 py-2 text-xs text-slate-500">No matches</li>
+          ) : null}
+        </ul>
+      ) : null}
     </div>
   );
 }
