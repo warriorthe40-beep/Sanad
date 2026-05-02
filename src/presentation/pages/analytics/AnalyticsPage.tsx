@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Area,
@@ -394,37 +394,35 @@ export default function AnalyticsPage() {
               )}
             </div>
 
-            {/* Include / exclude filters */}
-            {(availableCategories.length > 0 || availableStores.length > 0) ? (
-              <div className="space-y-3 rounded-xl border border-slate-700 bg-surface p-3">
-                <IncludeExcludeFilter
-                  label="Categories"
-                  options={availableCategories}
-                  excluded={excludedCategories}
-                  onToggle={toggleCategory}
-                  onReset={() => setExcludedCategories(new Set())}
-                />
-                <IncludeExcludeFilter
-                  label="Stores"
-                  options={availableStores}
-                  excluded={excludedStores}
-                  onToggle={toggleStore}
-                  onReset={() => setExcludedStores(new Set())}
-                />
-                {hasSecondaryFilter ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setExcludedCategories(new Set());
-                      setExcludedStores(new Set());
-                    }}
-                    className="text-xs text-slate-400 hover:text-slate-200"
-                  >
-                    × Reset all filters
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
+            {/* Category + store include/exclude dropdowns */}
+            <div className="flex flex-wrap items-center gap-3">
+              <IncludeExcludeDropdown
+                placeholder="All categories"
+                options={availableCategories}
+                excluded={excludedCategories}
+                onToggle={toggleCategory}
+                onReset={() => setExcludedCategories(new Set())}
+              />
+              <IncludeExcludeDropdown
+                placeholder="All stores"
+                options={availableStores}
+                excluded={excludedStores}
+                onToggle={toggleStore}
+                onReset={() => setExcludedStores(new Set())}
+              />
+              {hasSecondaryFilter ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExcludedCategories(new Set());
+                    setExcludedStores(new Set());
+                  }}
+                  className="text-xs text-slate-400 hover:text-slate-200"
+                >
+                  × Reset all
+                </button>
+              ) : null}
+            </div>
           </section>
 
           {/* ── Stats row ── */}
@@ -692,66 +690,124 @@ function EmptyState() {
   );
 }
 
-// ─── Include / exclude filter ─────────────────────────────────────────────────
+// ─── Include / exclude dropdown ───────────────────────────────────────────────
 
-interface IncludeExcludeFilterProps {
-  label: string;
+interface IncludeExcludeDropdownProps {
+  placeholder: string;
   options: string[];
   excluded: Set<string>;
   onToggle: (option: string) => void;
   onReset: () => void;
 }
 
-function IncludeExcludeFilter({
-  label,
+function IncludeExcludeDropdown({
+  placeholder,
   options,
   excluded,
   onToggle,
   onReset,
-}: IncludeExcludeFilterProps) {
-  if (options.length === 0) return null;
-  const hasExclusions = excluded.size > 0;
+}: IncludeExcludeDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery('');
+      }
+    }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
+
+  const excludedCount = excluded.size;
+  const hasExclusions = excludedCount > 0;
+
+  const visible = query
+    ? options.filter((o) => o.toLowerCase().includes(query.toLowerCase()))
+    : options;
+
+  const triggerLabel = hasExclusions
+    ? `${excludedCount} excluded`
+    : placeholder;
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          {label}
-        </span>
-        {hasExclusions ? (
-          <button
-            type="button"
-            onClick={onReset}
-            className="text-xs text-slate-400 hover:text-slate-200"
-          >
-            Reset
-          </button>
-        ) : null}
-      </div>
-      <div className="flex flex-wrap gap-1.5">
-        {options.map((option) => {
-          const isExcluded = excluded.has(option);
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => onToggle(option)}
-              aria-pressed={!isExcluded}
-              title={isExcluded ? 'Click to include' : 'Click to exclude'}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                isExcluded
-                  ? 'border-rose-700/60 bg-rose-950/50 text-rose-300 hover:bg-rose-900/60'
-                  : 'border-emerald-700/40 bg-emerald-950/30 text-slate-300 hover:border-emerald-600/60 hover:bg-emerald-900/40'
-              }`}
-            >
-              <span aria-hidden="true" className="text-[10px] font-bold leading-none">
-                {isExcluded ? '✕' : '✓'}
-              </span>
-              {option}
-            </button>
-          );
-        })}
-      </div>
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        onClick={() => { setOpen((v) => !v); setQuery(''); }}
+        className={`flex min-w-[160px] items-center justify-between gap-2 rounded-md border px-3 py-1.5 text-xs font-medium transition ${
+          hasExclusions
+            ? 'border-rose-700/60 bg-rose-950/40 text-rose-300'
+            : 'border-slate-700 bg-surface text-slate-200 hover:bg-surface-elevated'
+        }`}
+      >
+        <span>{triggerLabel}</span>
+        <span className="text-slate-500" aria-hidden="true">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open ? (
+        <div className="absolute z-50 mt-1 min-w-[200px] overflow-hidden rounded-md border border-slate-700 bg-surface-elevated shadow-lg">
+          {options.length > 6 ? (
+            <div className="border-b border-slate-700 px-3 py-2">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search…"
+                className="w-full bg-transparent text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none"
+                autoFocus
+              />
+            </div>
+          ) : null}
+
+          <ul className="max-h-56 overflow-auto py-1">
+            {visible.map((option) => {
+              const isExcluded = excluded.has(option);
+              return (
+                <li key={option}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => { e.preventDefault(); onToggle(option); }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-brand/20"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                        isExcluded
+                          ? 'bg-rose-700/60 text-rose-200'
+                          : 'bg-emerald-700/50 text-emerald-200'
+                      }`}
+                    >
+                      {isExcluded ? '✕' : '✓'}
+                    </span>
+                    <span className={isExcluded ? 'text-slate-400 line-through' : 'text-slate-200'}>
+                      {option}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+            {visible.length === 0 ? (
+              <li className="px-3 py-2 text-xs text-slate-500">No matches</li>
+            ) : null}
+          </ul>
+
+          {hasExclusions ? (
+            <div className="border-t border-slate-700 px-3 py-2">
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); onReset(); }}
+                className="text-xs text-slate-400 hover:text-slate-200"
+              >
+                ✓ Include all
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
