@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import {
   clearApiKey,
   getApiKey,
@@ -266,6 +267,24 @@ export default function SettingsPage() {
             devtools. For shared or untrusted devices, leave the scanner disabled
             and enter purchases manually.
           </p>
+        </div>
+      </section>
+
+      {/* Clean Up History */}
+      <section className="mt-6 rounded-xl border border-slate-700 bg-surface p-5 sm:p-6">
+        <h2 className="text-base font-semibold text-slate-100">Clean up store history</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          AI scans all your store names for likely duplicates (e.g. "Starbuck" vs
+          "Starbucks") and lets you merge them into one canonical name across all
+          purchases.
+        </p>
+        <div className="mt-4">
+          <Link
+            to="/settings/cleanup"
+            className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-hover"
+          >
+            Clean Up History
+          </Link>
         </div>
       </section>
 

@@ -17,6 +17,7 @@ import AlertsPage from '@/presentation/pages/alerts/AlertsPage';
 import AnalyticsPage from '@/presentation/pages/analytics/AnalyticsPage';
 import ClaimsPage from '@/presentation/pages/claims/ClaimsPage';
 import SettingsPage from '@/presentation/pages/settings/SettingsPage';
+import CleanUpHistoryPage from '@/presentation/pages/settings/CleanUpHistory/CleanUpHistoryPage';
 
 import AdminDashboardPage from '@/presentation/pages/admin/AdminDashboardPage';
 import ManageCategoriesPage from '@/presentation/pages/admin/ManageCategories/ManageCategoriesPage';
@@ -58,6 +59,7 @@ export default function AppRoutes() {
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="claims" element={<ClaimsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/cleanup" element={<CleanUpHistoryPage />} />
 
           <Route element={<RequireAdmin />}>
             <Route path="admin" element={<AdminDashboardPage />} />
