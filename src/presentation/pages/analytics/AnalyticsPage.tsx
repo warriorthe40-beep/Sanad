@@ -9,7 +9,6 @@ import {
   Pie,
   PieChart,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -41,14 +40,6 @@ const PIE_COLORS = [
   '#0ea5e9', '#8b5cf6', '#ec4899', '#14b8a6',
   '#eab308', '#64748b',
 ];
-
-const TOOLTIP_STYLE: React.CSSProperties = {
-  background: '#1a1a1e',
-  border: '1px solid #2f2f36',
-  borderRadius: 8,
-  color: '#f1f5f9',
-  fontSize: 12,
-};
 
 const PICKER_CLASS =
   'rounded-md border border-slate-700 bg-surface px-2 py-1.5 text-xs ' +
@@ -524,13 +515,6 @@ function CategoryPie({ rows }: { rows: CategoryRow[] }) {
               <Cell key={row.name} fill={PIE_COLORS[i % PIE_COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip
-            contentStyle={TOOLTIP_STYLE}
-            formatter={(value, name) => [
-              formatCurrency(Number(value), 2),
-              String(name),
-            ]}
-          />
           <Legend
             verticalAlign="bottom"
             height={36}
@@ -588,10 +572,6 @@ function SpendingAreaChart({
             tickFormatter={(v: number) =>
               v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(v)
             }
-          />
-          <Tooltip
-            contentStyle={TOOLTIP_STYLE}
-            formatter={(value) => [formatCurrency(Number(value), 2), 'Total']}
           />
           <Area
             type="monotone"
