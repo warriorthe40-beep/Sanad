@@ -426,7 +426,7 @@ export default function AnalyticsPage() {
           </section>
 
           {/* ── Stats row ── */}
-          <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <section className="mb-6">
             <div className="rounded-xl border border-slate-700 bg-surface p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Total spending
@@ -444,19 +444,6 @@ export default function AnalyticsPage() {
                 {hasSecondaryFilter
                   ? `${filteredPurchases.length} of ${filteredByDate.length} purchases · ${period}`
                   : `${filteredByDate.length} purchase${filteredByDate.length === 1 ? '' : 's'} · ${period}`}
-              </p>
-            </div>
-            <div className="rounded-xl border border-slate-700 bg-surface p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Categories
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-slate-100">
-                {categoryRows.length}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {hasSecondaryFilter
-                  ? 'In filtered selection'
-                  : 'Distinct categories in this period'}
               </p>
             </div>
           </section>
