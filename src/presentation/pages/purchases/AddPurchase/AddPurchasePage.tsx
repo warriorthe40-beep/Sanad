@@ -9,12 +9,13 @@ import {
 } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MissingApiKeyError, pdfFirstPageToBlob, scanReceipt, scanReceiptText } from '@/application/receiptScanner';
-import { documentRepository } from '@/data/repositories';
+import { documentRepository, purchaseRepository, storeAliasRepository } from '@/data/repositories';
+import type { StoreAlias } from '@/data/models';
 import { hasApiKey } from '@/services/settings/apiKey';
 import { getSuggestion, updateFromUser, type Suggestion } from '@/application/suggestions';
+import { resolveStoreName, normalizeStoreName } from '@/application/storeIntelligence';
 import { calculateWarrantyEndDate, scheduleAlerts } from '@/application/warranty';
 import { validatePurchase, type PurchaseValidationErrors } from '@/application/validation';
-import { purchaseRepository } from '@/data/repositories';
 import { useCategories } from '@/presentation/hooks/useCategories';
 import { getCurrentUserId } from '@/shared/utils/currentUser';
 import DurationOrEndDateField, {
@@ -24,6 +25,7 @@ import DurationOrEndDateField, {
   type DurationOrEndDateValue,
 } from '@/presentation/components/DurationOrEndDateField';
 import StoreAutocomplete from '@/presentation/components/StoreAutocomplete';
+import GlobalSyncModal from '@/presentation/components/GlobalSyncModal';
 
 /**
  * AddPurchasePage — full "Add Purchase with AI Receipt Scanning" flow from the
@@ -98,6 +100,15 @@ export default function AddPurchasePage() {
   const previewObjectUrl = useRef<string | null>(null);
   const uploadedFile = useRef<File | null>(null);
   const [storeHistory, setStoreHistory] = useState<string[]>([]);
+  const [aliases, setAliases] = useState<StoreAlias[]>([]);
+  const [rawAIExtracted, setRawAIExtracted] = useState<string | null>(null);
+  const [aiResolvedName, setAiResolvedName] = useState<string | null>(null);
+  const [syncPending, setSyncPending] = useState<{
+    originalName: string;
+    newName: string;
+    count: number;
+  } | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     const userId = getCurrentUserId();
@@ -116,6 +127,7 @@ export default function AddPurchasePage() {
         );
       })
       .catch(() => {});
+    storeAliasRepository.getByUserId(userId).then(setAliases).catch(() => {});
   }, []);
 
   // Steps 7–8: re-fetch the community suggestion whenever the
@@ -196,14 +208,17 @@ export default function AddPurchasePage() {
       const imageBlob =
         file.type === 'application/pdf' ? await pdfFirstPageToBlob(file) : file;
       const data = await scanReceipt(imageBlob);
+      const resolved = resolveStoreName(data.storeName, aliases);
+      setRawAIExtracted(data.storeName);
+      setAiResolvedName(resolved);
       setForm((prev) => ({
         ...prev,
-        storeName: prev.storeName || data.storeName,
+        storeName: prev.storeName || resolved,
         price: prev.price || String(data.amount),
         purchaseDate: toISODate(data.date),
       }));
       setScanNotice(
-        `Extracted ${data.storeName} · ${data.amount} SAR · ${toISODate(data.date)}.`
+        `Extracted ${resolved} · ${data.amount} SAR · ${toISODate(data.date)}.`
       );
     } catch (err) {
       if (err instanceof MissingApiKeyError) {
@@ -232,14 +247,17 @@ export default function AddPurchasePage() {
     setPasteNotice(null);
     try {
       const data = await scanReceiptText(text);
+      const resolved = resolveStoreName(data.storeName, aliases);
+      setRawAIExtracted(data.storeName);
+      setAiResolvedName(resolved);
       setForm((prev) => ({
         ...prev,
-        storeName: prev.storeName || data.storeName,
+        storeName: prev.storeName || resolved,
         price: prev.price || String(data.amount),
         purchaseDate: toISODate(data.date),
       }));
       setPasteNotice(
-        `Extracted ${data.storeName} · ${data.amount} SAR · ${toISODate(data.date)}.`
+        `Extracted ${resolved} · ${data.amount} SAR · ${toISODate(data.date)}.`
       );
       setPasteText('');
     } catch (err) {
@@ -363,8 +381,19 @@ export default function AddPurchasePage() {
         await scheduleAlerts(saved.id, draft.purchaseDate!, returnEndDate, 'return');
       }
 
-      // Steps 21–22: success.
-      navigate('/purchases', { replace: true });
+      // Steps 21–22: check for global sync, then navigate.
+      const submittedStore = draft.storeName!;
+      if (
+        rawAIExtracted &&
+        aiResolvedName !== null &&
+        submittedStore.toLowerCase() !== aiResolvedName.toLowerCase()
+      ) {
+        const userId = getCurrentUserId();
+        const count = await purchaseRepository.countByStoreName(userId, rawAIExtracted);
+        setSyncPending({ originalName: rawAIExtracted, newName: submittedStore, count });
+      } else {
+        navigate('/purchases', { replace: true });
+      }
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Could not save purchase.');
     } finally {
@@ -372,8 +401,43 @@ export default function AddPurchasePage() {
     }
   }
 
+  async function handleSyncConfirm() {
+    if (!syncPending) return;
+    setIsSyncing(true);
+    try {
+      const userId = getCurrentUserId();
+      await purchaseRepository.renameStore(userId, syncPending.originalName, syncPending.newName);
+      await storeAliasRepository.upsert(
+        userId,
+        normalizeStoreName(syncPending.originalName),
+        syncPending.newName
+      );
+    } catch {
+      // best-effort; purchase already saved
+    } finally {
+      setIsSyncing(false);
+      setSyncPending(null);
+      navigate('/purchases', { replace: true });
+    }
+  }
+
+  function handleSyncSkip() {
+    setSyncPending(null);
+    navigate('/purchases', { replace: true });
+  }
+
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-8">
+      {syncPending ? (
+        <GlobalSyncModal
+          originalName={syncPending.originalName}
+          newName={syncPending.newName}
+          matchCount={syncPending.count}
+          isApplying={isSyncing}
+          onConfirm={() => void handleSyncConfirm()}
+          onSkip={handleSyncSkip}
+        />
+      ) : null}
       <header className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-100 sm:text-3xl">
           Add purchase

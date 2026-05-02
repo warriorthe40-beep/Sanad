@@ -8,3 +8,4 @@ export type { Alert } from './Alert';
 export type { Claim } from './Claim';
 export type { Analytics } from './Analytics';
 export type { ReceiptScannerConfig, ScannedReceiptData } from './ReceiptScanner';
+export type { StoreAlias } from './StoreAlias';

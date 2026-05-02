@@ -128,4 +128,23 @@ export class PurchaseRepository implements Repository<Entity & Purchase> {
     if (error) throw new Error(error.message);
     return (count ?? 0) > 0;
   }
+
+  async countByStoreName(userId: string, storeName: string): Promise<number> {
+    const { count, error } = await supabase
+      .from(TABLE)
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('store_name', storeName);
+    if (error) throw new Error(error.message);
+    return count ?? 0;
+  }
+
+  async renameStore(userId: string, oldName: string, newName: string): Promise<void> {
+    const { error } = await supabase
+      .from(TABLE)
+      .update({ store_name: newName })
+      .eq('user_id', userId)
+      .eq('store_name', oldName);
+    if (error) throw new Error(error.message);
+  }
 }

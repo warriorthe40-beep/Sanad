@@ -13,7 +13,10 @@ import { validatePurchase, type PurchaseValidationErrors } from '@/application/v
 import { useCategories } from '@/presentation/hooks/useCategories';
 import { getCurrentUserId } from '@/shared/utils/currentUser';
 import { getSuggestion, type Suggestion } from '@/application/suggestions';
+import { normalizeStoreName } from '@/application/storeIntelligence';
+import { storeAliasRepository } from '@/data/repositories';
 import StoreAutocomplete from '@/presentation/components/StoreAutocomplete';
+import GlobalSyncModal from '@/presentation/components/GlobalSyncModal';
 import DurationOrEndDateField, {
   fromPurchase,
   toDurationString,
@@ -76,6 +79,12 @@ export default function EditPurchasePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [storeHistory, setStoreHistory] = useState<string[]>([]);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
+  const [syncPending, setSyncPending] = useState<{
+    originalName: string;
+    newName: string;
+    count: number;
+  } | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -253,12 +262,46 @@ export default function EditPurchasePage() {
         }
       }
 
-      navigate(`/purchases/${purchase.id}`, { replace: true });
+      const originalStore = purchase.storeName;
+      const submittedStore = draft.storeName!;
+      if (submittedStore.toLowerCase() !== originalStore.toLowerCase()) {
+        const userId = getCurrentUserId();
+        const count = await purchaseRepository.countByStoreName(userId, originalStore);
+        setSyncPending({ originalName: originalStore, newName: submittedStore, count });
+      } else {
+        navigate(`/purchases/${purchase.id}`, { replace: true });
+      }
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Could not save changes.');
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function handleSyncConfirm() {
+    if (!syncPending || !purchase) return;
+    setIsSyncing(true);
+    try {
+      const userId = getCurrentUserId();
+      await purchaseRepository.renameStore(userId, syncPending.originalName, syncPending.newName);
+      await storeAliasRepository.upsert(
+        userId,
+        normalizeStoreName(syncPending.originalName),
+        syncPending.newName
+      );
+    } catch {
+      // best-effort; purchase already saved
+    } finally {
+      setIsSyncing(false);
+      setSyncPending(null);
+      navigate(`/purchases/${purchase.id}`, { replace: true });
+    }
+  }
+
+  function handleSyncSkip() {
+    if (!purchase) return;
+    setSyncPending(null);
+    navigate(`/purchases/${purchase.id}`, { replace: true });
   }
 
   if (purchase === undefined) {
@@ -290,6 +333,16 @@ export default function EditPurchasePage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-8">
+      {syncPending ? (
+        <GlobalSyncModal
+          originalName={syncPending.originalName}
+          newName={syncPending.newName}
+          matchCount={syncPending.count}
+          isApplying={isSyncing}
+          onConfirm={() => void handleSyncConfirm()}
+          onSkip={handleSyncSkip}
+        />
+      ) : null}
       <nav className="mb-4 text-sm text-slate-500">
         <Link to={`/purchases/${purchase.id}`} className="hover:text-brand-hover">
           ← Back to purchase

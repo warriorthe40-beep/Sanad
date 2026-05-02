@@ -70,7 +70,7 @@ export async function scanReceipt(
         } as const);
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-3-5-sonnet-20241022',
     max_tokens: 256,
     messages: [
       {
@@ -90,7 +90,7 @@ export async function scanReceiptText(text: string): Promise<ScannedReceiptData>
   const client = createAnthropicClient();
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-3-5-sonnet-20241022',
     max_tokens: 256,
     messages: [
       {
