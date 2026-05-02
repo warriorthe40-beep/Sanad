@@ -276,6 +276,8 @@ export default function AddPurchasePage() {
     if (isSaving) return;
 
     const purchaseDate = new Date(form.purchaseDate);
+    const saveNow = new Date();
+    purchaseDate.setHours(saveNow.getHours(), saveNow.getMinutes(), 0, 0);
     const price = Number.parseFloat(form.price);
     const warrantyDuration = toDurationString(warranty);
     const returnDuration = toDurationString(returnWindow);

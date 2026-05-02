@@ -9,5 +9,5 @@ import { useAuth } from '@/auth/context/AuthContext';
 export default function RoleLanding() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user.role === 'admin' ? '/admin' : '/purchases'} replace />;
+  return <Navigate to="/purchases" replace />;
 }

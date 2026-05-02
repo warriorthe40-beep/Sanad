@@ -19,3 +19,8 @@ export function formatDate(date: Date): string {
     year: 'numeric',
   }).format(date);
 }
+
+/** e.g. "14:35" */
+export function formatTime(date: Date): string {
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+}

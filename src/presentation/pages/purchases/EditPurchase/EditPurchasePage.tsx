@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
   type ChangeEvent,
   type FormEvent,
@@ -10,6 +11,9 @@ import { alertRepository, purchaseRepository } from '@/data/repositories';
 import { calculateWarrantyEndDate, scheduleAlerts } from '@/application/warranty';
 import { validatePurchase, type PurchaseValidationErrors } from '@/application/validation';
 import { useCategories } from '@/presentation/hooks/useCategories';
+import { getCurrentUserId } from '@/shared/utils/currentUser';
+import { getSuggestion, type Suggestion } from '@/application/suggestions';
+import StoreAutocomplete from '@/presentation/components/StoreAutocomplete';
 import DurationOrEndDateField, {
   fromPurchase,
   toDurationString,
@@ -70,6 +74,8 @@ export default function EditPurchasePage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [storeHistory, setStoreHistory] = useState<string[]>([]);
+  const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -102,6 +108,70 @@ export default function EditPurchasePage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    if (!userId) return;
+    purchaseRepository
+      .getByUserId(userId)
+      .then((purchases) => {
+        const counts = new Map<string, number>();
+        for (const p of purchases) {
+          counts.set(p.storeName, (counts.get(p.storeName) ?? 0) + 1);
+        }
+        setStoreHistory(
+          [...counts.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([name]) => name)
+        );
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const store = form?.storeName.trim() ?? '';
+    const category = form?.categoryName.trim() ?? '';
+    if (!store || !category) {
+      setSuggestion(null);
+      return;
+    }
+    let cancelled = false;
+    void getSuggestion(store, category).then((result) => {
+      if (!cancelled) setSuggestion(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [form?.storeName, form?.categoryName]);
+
+  const suggestionMessage = useMemo(() => {
+    if (!suggestion) return null;
+    const src = suggestion.source === 'community' ? 'Community' : 'Seed';
+    const parts: string[] = [];
+    if (suggestion.warranty) parts.push(`warranty ${suggestion.warranty}`);
+    if (suggestion.returnWindow) parts.push(`return ${suggestion.returnWindow}`);
+    return parts.length > 0 ? `${src} suggests: ${parts.join(' · ')}` : null;
+  }, [suggestion]);
+
+  function applySuggestion() {
+    if (!suggestion) return;
+    setWarranty((prev) =>
+      prev.mode === 'none' && suggestion.warranty
+        ? fromPurchase(suggestion.warranty, undefined, 'years')
+        : prev
+    );
+    setReturnWindow((prev) =>
+      prev.mode === 'none' && suggestion.returnWindow
+        ? fromPurchase(suggestion.returnWindow, undefined, 'days')
+        : prev
+    );
+  }
+
+  function handleStoreChange(value: string) {
+    setForm((prev) => (prev ? { ...prev, storeName: value } : prev));
+    setErrors((prev) => ({ ...prev, storeName: undefined }));
+    setSaveError(null);
+  }
+
   function handleChange(
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) {
@@ -116,6 +186,8 @@ export default function EditPurchasePage() {
     if (!form || !purchase || isSaving) return;
 
     const purchaseDate = new Date(form.purchaseDate);
+    const saveNow = new Date();
+    purchaseDate.setHours(saveNow.getHours(), saveNow.getMinutes(), 0, 0);
     const price = Number.parseFloat(form.price);
     const warrantyDuration = toDurationString(warranty);
     const returnDuration = toDurationString(returnWindow);
@@ -244,15 +316,21 @@ export default function EditPurchasePage() {
           placeholder="Optional"
         />
 
-        <Field
-          label="Store"
-          name="storeName"
-          value={form.storeName}
-          onChange={handleChange}
-          required
-          disabled={isSaving}
-          error={errors.storeName}
-        />
+        <div>
+          <label htmlFor="storeName" className="mb-1 block text-sm font-medium text-slate-200">
+            Store <span className="text-rose-600">*</span>
+          </label>
+          <StoreAutocomplete
+            value={form.storeName}
+            onChange={handleStoreChange}
+            storeHistory={storeHistory}
+            disabled={isSaving}
+            hasError={Boolean(errors.storeName)}
+          />
+          {errors.storeName ? (
+            <p className="mt-1 text-xs text-rose-600">{errors.storeName}</p>
+          ) : null}
+        </div>
 
         <div>
           <label
@@ -306,6 +384,20 @@ export default function EditPurchasePage() {
             error={errors.purchaseDate}
           />
         </div>
+
+        {suggestionMessage ? (
+          <div className="flex flex-col gap-2 rounded-lg border border-brand/30 bg-brand-soft/60 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-200">{suggestionMessage}</p>
+            <button
+              type="button"
+              onClick={applySuggestion}
+              disabled={isSaving}
+              className="self-start rounded-md border border-brand px-3 py-1.5 text-xs font-semibold text-brand-hover hover:bg-brand hover:text-white disabled:opacity-60 sm:self-auto"
+            >
+              Apply suggestion
+            </button>
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <DurationOrEndDateField

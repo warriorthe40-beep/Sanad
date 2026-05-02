@@ -4,7 +4,7 @@ import type { Purchase } from '@/data/models';
 import { purchaseRepository } from '@/data/repositories';
 import { getWarrantyStatusView, type WarrantyStatusView } from '@/application/warranty';
 import { getCurrentUserId } from '@/shared/utils/currentUser';
-import { formatCurrency, formatDate } from '@/shared/utils/formatting';
+import { formatCurrency, formatDate, formatTime } from '@/shared/utils/formatting';
 
 const ALL_CATEGORIES = '__all__';
 
@@ -295,7 +295,10 @@ function PurchaseCard({ purchase }: { purchase: Purchase }) {
         </span>
       </div>
       <div className="mt-4 flex items-center justify-between text-xs">
-        <span className="text-slate-500">{formatDate(purchase.purchaseDate)}</span>
+        <span className="text-slate-500">
+          {formatDate(purchase.purchaseDate)}{' '}
+          <span className="tabular-nums">{formatTime(purchase.purchaseDate)}</span>
+        </span>
         <WarrantyBadge status={warranty} />
       </div>
     </Link>
