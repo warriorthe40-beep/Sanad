@@ -208,7 +208,10 @@ export default function AddPurchasePage() {
       const imageBlob =
         file.type === 'application/pdf' ? await pdfFirstPageToBlob(file) : file;
       const data = await scanReceipt(imageBlob);
-      const resolved = resolveStoreName(data.storeName, aliases);
+      const userId = getCurrentUserId();
+      const freshAliases = await storeAliasRepository.getByUserId(userId).catch(() => aliases);
+      setAliases(freshAliases);
+      const resolved = resolveStoreName(data.storeName, freshAliases);
       setRawAIExtracted(data.storeName);
       setAiResolvedName(resolved);
       setForm((prev) => ({
@@ -247,7 +250,10 @@ export default function AddPurchasePage() {
     setPasteNotice(null);
     try {
       const data = await scanReceiptText(text);
-      const resolved = resolveStoreName(data.storeName, aliases);
+      const userId = getCurrentUserId();
+      const freshAliases = await storeAliasRepository.getByUserId(userId).catch(() => aliases);
+      setAliases(freshAliases);
+      const resolved = resolveStoreName(data.storeName, freshAliases);
       setRawAIExtracted(data.storeName);
       setAiResolvedName(resolved);
       setForm((prev) => ({
