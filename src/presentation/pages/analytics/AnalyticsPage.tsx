@@ -61,6 +61,13 @@ function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
+// Returns the "current" day under the 6 AM boundary rule:
+// before 6 AM we're still in the previous day's period.
+function currentDayISO() {
+  const d = new Date();
+  if (d.getHours() < 6) d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 function currentMonthISO() {
   const d = new Date();
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
@@ -182,7 +189,7 @@ export default function AnalyticsPage() {
 
   // Date filter state
   const [viewType, setViewType] = useState<ViewType>('day');
-  const [selectedDay, setSelectedDay] = useState(todayISO);
+  const [selectedDay, setSelectedDay] = useState(currentDayISO);
   const [selectedMonth, setSelectedMonth] = useState(currentMonthISO);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [customStart, setCustomStart] = useState(firstOfMonthISO);
