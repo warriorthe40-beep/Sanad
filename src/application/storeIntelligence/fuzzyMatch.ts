@@ -37,3 +37,16 @@ export function stringSimilarity(a: string, b: string): number {
   if (maxLen === 0) return 1;
   return 1 - levenshtein(a, b) / maxLen;
 }
+
+/**
+ * Fraction of string `a`'s tokens that appear in string `b`.
+ * Only meaningful (non-zero) when `a` has 2+ tokens, to avoid
+ * single-word false positives.
+ */
+export function tokenOverlapScore(a: string, b: string): number {
+  const aTokens = a.split(' ').filter(Boolean);
+  if (aTokens.length < 2) return 0;
+  const bSet = new Set(b.split(' ').filter(Boolean));
+  const matches = aTokens.filter((t) => bSet.has(t)).length;
+  return matches / aTokens.length;
+}
