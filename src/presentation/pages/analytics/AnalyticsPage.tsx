@@ -262,6 +262,14 @@ export default function AnalyticsPage() {
     });
   }
 
+  function excludeAllCategories() {
+    setExcludedCategories(new Set(availableCategories));
+  }
+
+  function excludeAllStores() {
+    setExcludedStores(new Set(availableStores));
+  }
+
   // date-range total (always reflects the period, unaffected by category/store)
   const dateRangeTotal = useMemo(
     () => filteredByDate.reduce((s, p) => s + p.price, 0),
@@ -402,6 +410,7 @@ export default function AnalyticsPage() {
                 excluded={excludedCategories}
                 onToggle={toggleCategory}
                 onReset={() => setExcludedCategories(new Set())}
+                onExcludeAll={excludeAllCategories}
               />
               <IncludeExcludeDropdown
                 placeholder="All stores"
@@ -409,6 +418,7 @@ export default function AnalyticsPage() {
                 excluded={excludedStores}
                 onToggle={toggleStore}
                 onReset={() => setExcludedStores(new Set())}
+                onExcludeAll={excludeAllStores}
               />
               {hasSecondaryFilter ? (
                 <button
@@ -684,6 +694,7 @@ interface IncludeExcludeDropdownProps {
   excluded: Set<string>;
   onToggle: (option: string) => void;
   onReset: () => void;
+  onExcludeAll: () => void;
 }
 
 function IncludeExcludeDropdown({
@@ -692,6 +703,7 @@ function IncludeExcludeDropdown({
   excluded,
   onToggle,
   onReset,
+  onExcludeAll,
 }: IncludeExcludeDropdownProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -781,17 +793,24 @@ function IncludeExcludeDropdown({
             ) : null}
           </ul>
 
-          {hasExclusions ? (
-            <div className="border-t border-slate-700 px-3 py-2">
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); onReset(); }}
-                className="text-xs text-slate-400 hover:text-slate-200"
-              >
-                ✓ Include all
-              </button>
-            </div>
-          ) : null}
+          <div className="flex items-center justify-between border-t border-slate-700 px-3 py-2">
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); onExcludeAll(); }}
+              disabled={options.length > 0 && excluded.size === options.length}
+              className="text-xs text-rose-400 hover:text-rose-200 disabled:cursor-default disabled:opacity-40"
+            >
+              ✕ Exclude all
+            </button>
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); onReset(); }}
+              disabled={!hasExclusions}
+              className="text-xs text-emerald-400 hover:text-emerald-200 disabled:cursor-default disabled:opacity-40"
+            >
+              ✓ Include all
+            </button>
+          </div>
         </div>
       ) : null}
     </div>
