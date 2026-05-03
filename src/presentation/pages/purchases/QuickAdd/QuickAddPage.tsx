@@ -6,7 +6,8 @@ import {
   type FormEvent,
 } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { purchaseRepository } from '@/data/repositories';
+import { purchaseRepository, storeAliasRepository } from '@/data/repositories';
+import type { StoreAlias } from '@/data/models';
 import { validatePurchase, type PurchaseValidationErrors } from '@/application/validation';
 import { useCategories } from '@/presentation/hooks/useCategories';
 import { getCurrentUserId } from '@/shared/utils/currentUser';
@@ -15,7 +16,9 @@ import {
   pdfFirstPageToBlob,
   scanReceipt,
   scanReceiptText,
+  semanticStoreSearch,
 } from '@/application/receiptScanner';
+import { resolveStoreName, normalizeStoreName } from '@/application/storeIntelligence';
 import { hasApiKey } from '@/services/settings/apiKey';
 import StoreAutocomplete from '@/presentation/components/StoreAutocomplete';
 
@@ -49,12 +52,14 @@ export default function QuickAddPage() {
   const [pasteNotice, setPasteNotice] = useState<string | null>(null);
   const [apiKeyMissing, setApiKeyMissing] = useState<boolean>(() => !hasApiKey());
 
+  const [aliases, setAliases] = useState<StoreAlias[]>([]);
   const [frequentStores, setFrequentStores] = useState<string[]>([]);
   const [storeHistory, setStoreHistory] = useState<string[]>([]);
 
   useEffect(() => {
     const userId = getCurrentUserId();
     if (!userId) return;
+    storeAliasRepository.getByUserId(userId).then(setAliases).catch(() => {});
     purchaseRepository
       .getByUserId(userId)
       .then((purchases) => {
@@ -70,6 +75,39 @@ export default function QuickAddPage() {
       })
       .catch(() => {});
   }, []);
+
+  async function resolveWithSemanticFallback(
+    extracted: string,
+    resolved: string,
+    userId: string,
+    currentHistory: string[]
+  ): Promise<string> {
+    if (resolved !== extracted || !currentHistory.length) return resolved;
+    try {
+      const matches = await semanticStoreSearch(extracted, currentHistory);
+      if (!matches.length) return resolved;
+      const matched = matches[0];
+      const rawNorm = normalizeStoreName(extracted);
+      storeAliasRepository.upsert(userId, rawNorm, matched).catch(() => {});
+      setAliases((prev) => {
+        if (prev.some((a) => a.rawName === rawNorm)) return prev;
+        return [...prev, { id: crypto.randomUUID(), userId, rawName: rawNorm, cleanName: matched }];
+      });
+      return matched;
+    } catch {
+      return resolved;
+    }
+  }
+
+  async function fetchFreshHistory(userId: string): Promise<string[]> {
+    const purchases = await purchaseRepository.getByUserId(userId).catch(() => []);
+    const counts = new Map<string, number>();
+    for (const p of purchases) counts.set(p.storeName, (counts.get(p.storeName) ?? 0) + 1);
+    const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([name]) => name);
+    setStoreHistory(sorted);
+    setFrequentStores(sorted.slice(0, 5));
+    return sorted;
+  }
 
   function setStoreName(value: string) {
     setForm((prev) => ({ ...prev, storeName: value }));
@@ -95,15 +133,23 @@ export default function QuickAddPage() {
     setIsScanning(true);
     setScanNotice(null);
     try {
+      const userId = getCurrentUserId();
+      const [freshAliases, freshHistory] = await Promise.all([
+        storeAliasRepository.getByUserId(userId).catch(() => aliases),
+        fetchFreshHistory(userId),
+      ]);
+      setAliases(freshAliases);
       const imageBlob =
         file.type === 'application/pdf' ? await pdfFirstPageToBlob(file) : file;
-      const data = await scanReceipt(imageBlob);
+      const data = await scanReceipt(imageBlob, freshHistory, freshAliases);
+      const aliasResolved = resolveStoreName(data.storeName, freshAliases);
+      const resolved = await resolveWithSemanticFallback(data.storeName, aliasResolved, userId, freshHistory);
       setForm((prev) => ({
         ...prev,
-        storeName: prev.storeName || data.storeName,
+        storeName: prev.storeName || resolved,
         price: prev.price || String(data.amount),
       }));
-      setScanNotice(`Extracted ${data.storeName} · ${data.amount} SAR.`);
+      setScanNotice(`Extracted ${resolved} · ${data.amount} SAR.`);
     } catch (err) {
       if (err instanceof MissingApiKeyError) {
         setApiKeyMissing(true);
@@ -129,13 +175,21 @@ export default function QuickAddPage() {
     setIsPasting(true);
     setPasteNotice(null);
     try {
-      const data = await scanReceiptText(text);
+      const userId = getCurrentUserId();
+      const [freshAliases, freshHistory] = await Promise.all([
+        storeAliasRepository.getByUserId(userId).catch(() => aliases),
+        fetchFreshHistory(userId),
+      ]);
+      setAliases(freshAliases);
+      const data = await scanReceiptText(text, freshHistory, freshAliases);
+      const aliasResolved = resolveStoreName(data.storeName, freshAliases);
+      const resolved = await resolveWithSemanticFallback(data.storeName, aliasResolved, userId, freshHistory);
       setForm((prev) => ({
         ...prev,
-        storeName: prev.storeName || data.storeName,
+        storeName: prev.storeName || resolved,
         price: prev.price || String(data.amount),
       }));
-      setPasteNotice(`Extracted ${data.storeName} · ${data.amount} SAR.`);
+      setPasteNotice(`Extracted ${resolved} · ${data.amount} SAR.`);
       setPasteText('');
     } catch (err) {
       if (err instanceof MissingApiKeyError) {
