@@ -8,7 +8,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MissingApiKeyError, pdfFirstPageToBlob, scanReceipt, scanReceiptText } from '@/application/receiptScanner';
+import { MissingApiKeyError, pdfFirstPageToBlob, scanReceipt, scanReceiptText, semanticStoreSearch } from '@/application/receiptScanner';
 import { documentRepository, purchaseRepository, storeAliasRepository } from '@/data/repositories';
 import type { StoreAlias } from '@/data/models';
 import { hasApiKey } from '@/services/settings/apiKey';
@@ -178,6 +178,32 @@ export default function AddPurchasePage() {
     setSaveError(null);
   }
 
+  // After alias lookup: if the extracted name wasn't matched by an alias,
+  // ask Claude semantically (handles cross-script / genuinely different names).
+  // Silently saves the new alias so subsequent scans skip this call.
+  async function resolveWithSemanticFallback(
+    extracted: string,
+    resolved: string,
+    currentAliases: StoreAlias[],
+    userId: string
+  ): Promise<string> {
+    if (resolved !== extracted || !storeHistory.length) return resolved;
+    try {
+      const matches = await semanticStoreSearch(extracted, storeHistory);
+      if (!matches.length) return resolved;
+      const matched = matches[0];
+      const rawNorm = normalizeStoreName(extracted);
+      storeAliasRepository.upsert(userId, rawNorm, matched).catch(() => {});
+      setAliases((prev) => {
+        if (prev.some((a) => a.rawName === rawNorm)) return prev;
+        return [...prev, { id: crypto.randomUUID(), userId, rawName: rawNorm, cleanName: matched }];
+      });
+      return matched;
+    } catch {
+      return resolved;
+    }
+  }
+
   // Steps 2–6: user uploads a receipt photo/PDF, we call the scanner and
   // merge the extracted fields into the form (without clobbering fields the
   // user has already typed).
@@ -211,7 +237,8 @@ export default function AddPurchasePage() {
       const imageBlob =
         file.type === 'application/pdf' ? await pdfFirstPageToBlob(file) : file;
       const data = await scanReceipt(imageBlob, storeHistory, freshAliases);
-      const resolved = resolveStoreName(data.storeName, freshAliases);
+      const aliasResolved = resolveStoreName(data.storeName, freshAliases);
+      const resolved = await resolveWithSemanticFallback(data.storeName, aliasResolved, freshAliases, userId);
       setRawAIExtracted(data.storeName);
       setAiResolvedName(resolved);
       setForm((prev) => ({
@@ -253,7 +280,8 @@ export default function AddPurchasePage() {
       const freshAliases = await storeAliasRepository.getByUserId(userId).catch(() => aliases);
       setAliases(freshAliases);
       const data = await scanReceiptText(text, storeHistory, freshAliases);
-      const resolved = resolveStoreName(data.storeName, freshAliases);
+      const aliasResolved = resolveStoreName(data.storeName, freshAliases);
+      const resolved = await resolveWithSemanticFallback(data.storeName, aliasResolved, freshAliases, userId);
       setRawAIExtracted(data.storeName);
       setAiResolvedName(resolved);
       setForm((prev) => ({
