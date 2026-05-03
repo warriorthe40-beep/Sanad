@@ -184,7 +184,6 @@ export default function AddPurchasePage() {
   async function resolveWithSemanticFallback(
     extracted: string,
     resolved: string,
-    currentAliases: StoreAlias[],
     userId: string
   ): Promise<string> {
     if (resolved !== extracted || !storeHistory.length) return resolved;
@@ -238,7 +237,7 @@ export default function AddPurchasePage() {
         file.type === 'application/pdf' ? await pdfFirstPageToBlob(file) : file;
       const data = await scanReceipt(imageBlob, storeHistory, freshAliases);
       const aliasResolved = resolveStoreName(data.storeName, freshAliases);
-      const resolved = await resolveWithSemanticFallback(data.storeName, aliasResolved, freshAliases, userId);
+      const resolved = await resolveWithSemanticFallback(data.storeName, aliasResolved, userId);
       setRawAIExtracted(data.storeName);
       setAiResolvedName(resolved);
       setForm((prev) => ({
@@ -281,7 +280,7 @@ export default function AddPurchasePage() {
       setAliases(freshAliases);
       const data = await scanReceiptText(text, storeHistory, freshAliases);
       const aliasResolved = resolveStoreName(data.storeName, freshAliases);
-      const resolved = await resolveWithSemanticFallback(data.storeName, aliasResolved, freshAliases, userId);
+      const resolved = await resolveWithSemanticFallback(data.storeName, aliasResolved, userId);
       setRawAIExtracted(data.storeName);
       setAiResolvedName(resolved);
       setForm((prev) => ({
