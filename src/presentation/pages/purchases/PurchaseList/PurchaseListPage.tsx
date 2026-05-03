@@ -9,6 +9,16 @@ import { formatCurrency, formatDate, formatTime } from '@/shared/utils/formattin
 const ALL_CATEGORIES = '__all__';
 
 type WarrantyFilter = 'all' | 'active' | 'expiring' | 'expired' | 'none';
+type DateMode = 'day' | 'range';
+
+// 6 AM → 5:59:59 AM next day, consistent with the analytics page
+function dayBounds(iso: string): { start: number; end: number } {
+  const [y, m, d] = iso.split('-').map(Number);
+  return {
+    start: new Date(y, m - 1, d, 6, 0, 0, 0).getTime(),
+    end: new Date(y, m - 1, d + 1, 5, 59, 59, 999).getTime(),
+  };
+}
 
 const WARRANTY_FILTER_LABELS: Record<WarrantyFilter, string> = {
   all: 'All warranties',
@@ -34,6 +44,8 @@ export default function PurchaseListPage() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>(ALL_CATEGORIES);
   const [warrantyFilter, setWarrantyFilter] = useState<WarrantyFilter>('all');
+  const [dateMode, setDateMode] = useState<DateMode>('range');
+  const [dateExact, setDateExact] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -66,6 +78,10 @@ export default function PurchaseListPage() {
 
   const fromTime = useMemo(() => parseDateBoundary(dateFrom, 'start'), [dateFrom]);
   const toTime = useMemo(() => parseDateBoundary(dateTo, 'end'), [dateTo]);
+  const exactBounds = useMemo(
+    () => (dateExact ? dayBounds(dateExact) : null),
+    [dateExact],
+  );
 
   const visible = useMemo(() => {
     if (!purchases) return [];
@@ -79,8 +95,12 @@ export default function PurchaseListPage() {
         if (status !== warrantyFilter) return false;
       }
       const ts = purchase.purchaseDate.getTime();
-      if (fromTime !== null && ts < fromTime) return false;
-      if (toTime !== null && ts > toTime) return false;
+      if (dateMode === 'day') {
+        if (exactBounds && (ts < exactBounds.start || ts > exactBounds.end)) return false;
+      } else {
+        if (fromTime !== null && ts < fromTime) return false;
+        if (toTime !== null && ts > toTime) return false;
+      }
       if (!needle) return true;
       const haystack = [purchase.productName, purchase.storeName, purchase.categoryName]
         .filter(Boolean)
@@ -88,12 +108,13 @@ export default function PurchaseListPage() {
         .toLowerCase();
       return haystack.includes(needle);
     });
-  }, [purchases, query, category, warrantyFilter, fromTime, toTime]);
+  }, [purchases, query, category, warrantyFilter, dateMode, exactBounds, fromTime, toTime]);
 
   const hasActiveFilters =
     query.trim() !== '' ||
     category !== ALL_CATEGORIES ||
     warrantyFilter !== 'all' ||
+    dateExact !== '' ||
     dateFrom !== '' ||
     dateTo !== '';
 
@@ -101,6 +122,7 @@ export default function PurchaseListPage() {
     setQuery('');
     setCategory(ALL_CATEGORIES);
     setWarrantyFilter('all');
+    setDateExact('');
     setDateFrom('');
     setDateTo('');
   }
@@ -190,30 +212,56 @@ export default function PurchaseListPage() {
                 )}
               </select>
             </label>
-            <label>
-              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                From
-              </span>
-              <input
-                type="date"
-                value={dateFrom}
-                max={dateTo || undefined}
-                onChange={(event) => setDateFrom(event.target.value)}
-                className={filterInputClass}
-              />
-            </label>
-            <label>
-              <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                To
-              </span>
-              <input
-                type="date"
-                value={dateTo}
-                min={dateFrom || undefined}
-                onChange={(event) => setDateTo(event.target.value)}
-                className={filterInputClass}
-              />
-            </label>
+            <div className="sm:col-span-2">
+              <div className="mb-1 flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Date
+                </span>
+                <div className="inline-flex overflow-hidden rounded border border-slate-700 text-xs">
+                  {(['day', 'range'] as DateMode[]).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setDateMode(m)}
+                      className={`px-2 py-0.5 font-medium transition ${
+                        dateMode === m
+                          ? 'bg-brand text-white'
+                          : 'text-slate-400 hover:bg-surface-elevated'
+                      }`}
+                    >
+                      {m === 'day' ? 'Day' : 'Range'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {dateMode === 'day' ? (
+                <input
+                  type="date"
+                  value={dateExact}
+                  onChange={(e) => setDateExact(e.target.value)}
+                  className={filterInputClass}
+                />
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    max={dateTo || undefined}
+                    onChange={(event) => setDateFrom(event.target.value)}
+                    className={filterInputClass}
+                    placeholder="From"
+                  />
+                  <input
+                    type="date"
+                    value={dateTo}
+                    min={dateFrom || undefined}
+                    onChange={(event) => setDateTo(event.target.value)}
+                    className={filterInputClass}
+                    placeholder="To"
+                  />
+                </div>
+              )}
+            </div>
             <div className="flex items-end sm:col-span-2 lg:col-span-4">
               <button
                 type="button"
