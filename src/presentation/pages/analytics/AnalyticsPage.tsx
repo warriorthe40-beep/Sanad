@@ -601,6 +601,22 @@ function SpendingAreaChart({
             cursor={{ stroke: '#475569', strokeWidth: 1 }}
             contentStyle={TOOLTIP_STYLE}
             formatter={(value) => [formatCurrency(Number(value), 2), 'Total']}
+            labelFormatter={(label, payload) => {
+              const key = (payload as Array<{ payload?: { key?: string } }>)?.[0]?.payload?.key;
+              if (!key) return label;
+              if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+                const [y, m, d] = key.split('-').map(Number);
+                const date = new Date(y, m - 1, d);
+                const month = date.toLocaleString('en-GB', { month: 'long' });
+                const weekday = date.toLocaleString('en-GB', { weekday: 'long' });
+                return `${d} ${month}, ${weekday}`;
+              }
+              if (/^\d{4}-\d{2}$/.test(key)) {
+                const [y, m] = key.split('-').map(Number);
+                return new Date(y, m - 1, 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' });
+              }
+              return label;
+            }}
           />
           <Area
             type="monotone"
