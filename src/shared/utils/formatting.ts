@@ -1,13 +1,15 @@
 /**
- * Format an amount as SAR currency. Defaults to no fraction digits so
- * everyday prices like "4999 SAR" render cleanly; callers can override.
+ * Format an amount as SAR currency.
+ * When fractionDigits is omitted: shows up to 2 decimal places but
+ * suppresses trailing zeros (5 → "SAR 5", 5.5 → "SAR 5.5").
+ * Pass an explicit value to fix the digit count (e.g. 2 for totals).
  */
-export function formatCurrency(amount: number, fractionDigits = 0): string {
+export function formatCurrency(amount: number, fractionDigits?: number): string {
   return new Intl.NumberFormat('en-SA', {
     style: 'currency',
     currency: 'SAR',
-    maximumFractionDigits: fractionDigits,
-    minimumFractionDigits: fractionDigits,
+    minimumFractionDigits: fractionDigits ?? 0,
+    maximumFractionDigits: fractionDigits ?? 2,
   }).format(amount);
 }
 
