@@ -37,14 +37,29 @@ const RECEIPT_EXTRACTION_PROMPT =
   '{"storeName":"<string>","amount":<number>,"date":"<YYYY-MM-DD>","confidence":<0-1>}. ' +
   'No explanation, no markdown — just the JSON object.';
 
-function buildPrompt(knownStores?: string[]): string {
-  if (!knownStores?.length) return RECEIPT_EXTRACTION_PROMPT;
-  const list = knownStores.slice(0, 40).join(', ');
-  return (
-    RECEIPT_EXTRACTION_PROMPT +
-    ` The user's known stores are: [${list}].` +
-    ' If the store on this receipt matches one of those names — even across scripts, transliterations, or abbreviations — use that exact known name as storeName.'
-  );
+interface AliasHint { rawName: string; cleanName: string; }
+
+function buildPrompt(knownStores?: string[], aliases?: AliasHint[]): string {
+  let prompt = RECEIPT_EXTRACTION_PROMPT;
+
+  if (knownStores?.length) {
+    const list = knownStores.slice(0, 40).join(', ');
+    prompt +=
+      ` The user's known stores are: [${list}].` +
+      ' If the store on this receipt matches one of those names — even across scripts, transliterations, or abbreviations — use that exact known name as storeName.';
+  }
+
+  if (aliases?.length) {
+    const mappings = aliases
+      .slice(0, 30)
+      .map((a) => `"${a.rawName}" → "${a.cleanName}"`)
+      .join('; ');
+    prompt +=
+      ` The user has also taught these corrections: ${mappings}.` +
+      ' If the extracted store name is similar to a left-hand side entry (even with minor spelling differences), use the right-hand side as storeName.';
+  }
+
+  return prompt;
 }
 
 interface ExtractedReceipt {
@@ -57,6 +72,7 @@ interface ExtractedReceipt {
 export async function scanReceipt(
   image: File | Blob,
   knownStores?: string[],
+  aliases?: AliasHint[],
 ): Promise<ScannedReceiptData> {
   const client = createAnthropicClient();
   const { data, mediaType } = await fileToBase64(image);
@@ -88,7 +104,7 @@ export async function scanReceipt(
         role: 'user',
         content: [
           receiptBlock,
-          { type: 'text', text: buildPrompt(knownStores) },
+          { type: 'text', text: buildPrompt(knownStores, aliases) },
         ],
       },
     ],
@@ -100,6 +116,7 @@ export async function scanReceipt(
 export async function scanReceiptText(
   text: string,
   knownStores?: string[],
+  aliases?: AliasHint[],
 ): Promise<ScannedReceiptData> {
   const client = createAnthropicClient();
 
@@ -112,7 +129,7 @@ export async function scanReceiptText(
         content: [
           {
             type: 'text',
-            text: `${buildPrompt(knownStores)}\n\nReceipt text:\n${text}`,
+            text: `${buildPrompt(knownStores, aliases)}\n\nReceipt text:\n${text}`,
           },
         ],
       },

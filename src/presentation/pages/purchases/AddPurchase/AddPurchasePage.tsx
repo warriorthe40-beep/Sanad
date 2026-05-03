@@ -205,12 +205,12 @@ export default function AddPurchasePage() {
     setIsScanning(true);
     setScanNotice(null);
     try {
-      const imageBlob =
-        file.type === 'application/pdf' ? await pdfFirstPageToBlob(file) : file;
-      const data = await scanReceipt(imageBlob, storeHistory);
       const userId = getCurrentUserId();
       const freshAliases = await storeAliasRepository.getByUserId(userId).catch(() => aliases);
       setAliases(freshAliases);
+      const imageBlob =
+        file.type === 'application/pdf' ? await pdfFirstPageToBlob(file) : file;
+      const data = await scanReceipt(imageBlob, storeHistory, freshAliases);
       const resolved = resolveStoreName(data.storeName, freshAliases);
       setRawAIExtracted(data.storeName);
       setAiResolvedName(resolved);
@@ -249,10 +249,10 @@ export default function AddPurchasePage() {
     setIsPasting(true);
     setPasteNotice(null);
     try {
-      const data = await scanReceiptText(text, storeHistory);
       const userId = getCurrentUserId();
       const freshAliases = await storeAliasRepository.getByUserId(userId).catch(() => aliases);
       setAliases(freshAliases);
+      const data = await scanReceiptText(text, storeHistory, freshAliases);
       const resolved = resolveStoreName(data.storeName, freshAliases);
       setRawAIExtracted(data.storeName);
       setAiResolvedName(resolved);
