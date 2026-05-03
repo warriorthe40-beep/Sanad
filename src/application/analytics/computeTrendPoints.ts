@@ -21,13 +21,13 @@ export function computeTrendPoints(
   purchases: readonly Purchase[],
   granularity: TrendGranularity,
   start: Date,
-  end: Date
+  end: Date,
+  dayStartHour = 0,
 ): TrendPoint[] {
   switch (granularity) {
     case 'hour': {
-      const DAY_START = 6;
       const points: TrendPoint[] = Array.from({ length: 24 }, (_, slot) => {
-        const h = (DAY_START + slot) % 24;
+        const h = (dayStartHour + slot) % 24;
         const label =
           h === 0 ? '12 AM'
           : h < 12 ? `${h} AM`
@@ -36,7 +36,7 @@ export function computeTrendPoints(
         return { key: String(h), label, total: 0 };
       });
       for (const p of purchases) {
-        const slot = (p.purchaseDate.getHours() - DAY_START + 24) % 24;
+        const slot = (p.purchaseDate.getHours() - dayStartHour + 24) % 24;
         points[slot].total += p.price;
       }
       return points;
@@ -59,7 +59,7 @@ export function computeTrendPoints(
       }
       for (const p of purchases) {
         const d = new Date(p.purchaseDate);
-        if (d.getHours() < 6) d.setDate(d.getDate() - 1);
+        if (dayStartHour > 0 && d.getHours() < dayStartHour) d.setDate(d.getDate() - 1);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const i = idx[key];
         if (i !== undefined) points[i].total += p.price;
@@ -83,7 +83,8 @@ export function computeTrendPoints(
         cursor.setMonth(cursor.getMonth() + 1);
       }
       for (const p of purchases) {
-        const d = p.purchaseDate;
+        const d = new Date(p.purchaseDate);
+        if (dayStartHour > 0 && d.getHours() < dayStartHour) d.setDate(d.getDate() - 1);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         const i = idx[key];
         if (i !== undefined) points[i].total += p.price;

@@ -6,6 +6,7 @@ import {
   maskApiKey,
   setApiKey,
 } from '@/services/settings/apiKey';
+import { getDayStart, setDayStart, type DayStartHour } from '@/services/settings/dayStart';
 import { purchaseRepository, documentRepository } from '@/data/repositories';
 import { getCurrentUserId } from '@/shared/utils/currentUser';
 
@@ -14,6 +15,12 @@ import { getCurrentUserId } from '@/shared/utils/currentUser';
  */
 export default function SettingsPage() {
   const [savedKey, setSavedKey] = useState<string | null>(() => getApiKey());
+  const [dayStart, setDayStartState] = useState<DayStartHour>(() => getDayStart());
+
+  function handleDayStartChange(hour: DayStartHour) {
+    setDayStart(hour);
+    setDayStartState(hour);
+  }
   const [draft, setDraft] = useState('');
   const [feedback, setFeedback] = useState<{
     kind: 'success' | 'error';
@@ -267,6 +274,32 @@ export default function SettingsPage() {
             devtools. For shared or untrusted devices, leave the scanner disabled
             and enter purchases manually.
           </p>
+        </div>
+      </section>
+
+      {/* Day start time */}
+      <section className="mt-6 rounded-xl border border-slate-700 bg-surface p-5 sm:p-6">
+        <h2 className="text-base font-semibold text-slate-100">Day start time</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Controls when a new "day" begins in analytics and the purchases filter.
+          If you often shop late at night, setting this to 6:00 AM means purchases
+          made between midnight and 5:59 AM are counted as the previous day.
+        </p>
+        <div className="mt-4 inline-flex overflow-hidden rounded-md border border-slate-700 text-sm">
+          {([0, 6] as DayStartHour[]).map((hour) => (
+            <button
+              key={hour}
+              type="button"
+              onClick={() => handleDayStartChange(hour)}
+              className={`px-4 py-2 font-medium transition ${
+                dayStart === hour
+                  ? 'bg-brand text-white'
+                  : 'text-slate-300 hover:bg-surface-elevated'
+              }`}
+            >
+              {hour === 0 ? '12:00 AM (midnight)' : '6:00 AM'}
+            </button>
+          ))}
         </div>
       </section>
 

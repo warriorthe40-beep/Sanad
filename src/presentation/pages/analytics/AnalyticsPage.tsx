@@ -24,6 +24,7 @@ import {
 } from '@/application/analytics';
 import { getCurrentUserId } from '@/shared/utils/currentUser';
 import { formatCurrency } from '@/shared/utils/formatting';
+import { getDayStart } from '@/services/settings/dayStart';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -61,11 +62,9 @@ function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
-// Returns the "current" day under the 6 AM boundary rule:
-// before 6 AM we're still in the previous day's period.
-function currentDayISO() {
+function currentDayISO(ds: number) {
   const d = new Date();
-  if (d.getHours() < 6) d.setDate(d.getDate() - 1);
+  if (ds > 0 && d.getHours() < ds) d.setDate(d.getDate() - 1);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 function currentMonthISO() {
@@ -80,31 +79,36 @@ function pad(n: number) {
   return String(n).padStart(2, '0');
 }
 
-function dayBounds(iso: string) {
+function dayBounds(iso: string, ds: number) {
   const [y, m, d] = iso.split('-').map(Number);
+  const end = ds > 0 ? ds - 1 : 23;
+  const endMin = ds > 0 ? 59 : 59;
   return {
-    start: new Date(y, m - 1, d, 6, 0, 0, 0),
-    end: new Date(y, m - 1, d + 1, 5, 59, 59, 999),
+    start: new Date(y, m - 1, d, ds, 0, 0, 0),
+    end: new Date(y, m - 1, d + (ds > 0 ? 1 : 0), end, endMin, 59, 999),
   };
 }
-function monthBounds(iso: string) {
+function monthBounds(iso: string, ds: number) {
   const [y, m] = iso.split('-').map(Number);
+  const end = ds > 0 ? ds - 1 : 23;
   return {
-    start: new Date(y, m - 1, 1, 6, 0, 0, 0),
-    end: new Date(y, m, 1, 5, 59, 59, 999), // day 1 of next month at 5:59 AM
+    start: new Date(y, m - 1, 1, ds, 0, 0, 0),
+    end: new Date(y, m, ds > 0 ? 1 : 0, end, 59, 59, 999),
   };
 }
-function yearBounds(year: number) {
+function yearBounds(year: number, ds: number) {
+  const end = ds > 0 ? ds - 1 : 23;
   return {
-    start: new Date(year, 0, 1, 6, 0, 0, 0),
-    end: new Date(year + 1, 0, 1, 5, 59, 59, 999),
+    start: new Date(year, 0, 1, ds, 0, 0, 0),
+    end: new Date(year + 1, 0, ds > 0 ? 1 : 0, end, 59, 59, 999),
   };
 }
-function customBounds(startISO: string, endISO: string) {
+function customBounds(startISO: string, endISO: string, ds: number) {
   const [sy, sm, sd] = startISO.split('-').map(Number);
   const [ey, em, ed] = endISO.split('-').map(Number);
-  const s = new Date(sy, sm - 1, sd, 6, 0, 0, 0);
-  const e = new Date(ey, em - 1, ed + 1, 5, 59, 59, 999);
+  const end = ds > 0 ? ds - 1 : 23;
+  const s = new Date(sy, sm - 1, sd, ds, 0, 0, 0);
+  const e = new Date(ey, em - 1, ed + (ds > 0 ? 1 : 0), end, 59, 59, 999);
   return s <= e ? { start: s, end: e } : { start: e, end: s };
 }
 
@@ -186,10 +190,11 @@ function PiePercentLabel(props: Record<string, unknown>) {
 export default function AnalyticsPage() {
   const [purchases, setPurchases] = useState<Purchase[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [dayStart] = useState(() => getDayStart());
 
   // Date filter state
   const [viewType, setViewType] = useState<ViewType>('day');
-  const [selectedDay, setSelectedDay] = useState(currentDayISO);
+  const [selectedDay, setSelectedDay] = useState(() => currentDayISO(dayStart));
   const [selectedMonth, setSelectedMonth] = useState(currentMonthISO);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [customStart, setCustomStart] = useState(firstOfMonthISO);
@@ -214,11 +219,11 @@ export default function AnalyticsPage() {
 
   // Date bounds for the selected view
   const bounds = useMemo(() => {
-    if (viewType === 'day') return dayBounds(selectedDay);
-    if (viewType === 'month') return monthBounds(selectedMonth);
-    if (viewType === 'year') return yearBounds(selectedYear);
-    return customBounds(customStart, customEnd);
-  }, [viewType, selectedDay, selectedMonth, selectedYear, customStart, customEnd]);
+    if (viewType === 'day') return dayBounds(selectedDay, dayStart);
+    if (viewType === 'month') return monthBounds(selectedMonth, dayStart);
+    if (viewType === 'year') return yearBounds(selectedYear, dayStart);
+    return customBounds(customStart, customEnd, dayStart);
+  }, [viewType, selectedDay, selectedMonth, selectedYear, customStart, customEnd, dayStart]);
 
   const granularity = useMemo(
     () => granularityFor(viewType, bounds.start, bounds.end),
@@ -302,8 +307,8 @@ export default function AnalyticsPage() {
   }, [filteredPurchases]);
 
   const trendPoints = useMemo(
-    () => computeTrendPoints(filteredPurchases, granularity, bounds.start, bounds.end),
-    [filteredPurchases, granularity, bounds],
+    () => computeTrendPoints(filteredPurchases, granularity, bounds.start, bounds.end, dayStart),
+    [filteredPurchases, granularity, bounds, dayStart],
   );
 
   const years = useMemo(() => {

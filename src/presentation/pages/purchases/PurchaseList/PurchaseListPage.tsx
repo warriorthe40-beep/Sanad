@@ -5,18 +5,19 @@ import { purchaseRepository } from '@/data/repositories';
 import { getWarrantyStatusView, type WarrantyStatusView } from '@/application/warranty';
 import { getCurrentUserId } from '@/shared/utils/currentUser';
 import { formatCurrency, formatDate, formatTime } from '@/shared/utils/formatting';
+import { getDayStart } from '@/services/settings/dayStart';
 
 const ALL_CATEGORIES = '__all__';
 
 type WarrantyFilter = 'all' | 'active' | 'expiring' | 'expired' | 'none';
 type DateMode = 'day' | 'range';
 
-// 6 AM → 5:59:59 AM next day, consistent with the analytics page
-function dayBounds(iso: string): { start: number; end: number } {
+function dayBounds(iso: string, ds: number): { start: number; end: number } {
   const [y, m, d] = iso.split('-').map(Number);
+  const endH = ds > 0 ? ds - 1 : 23;
   return {
-    start: new Date(y, m - 1, d, 6, 0, 0, 0).getTime(),
-    end: new Date(y, m - 1, d + 1, 5, 59, 59, 999).getTime(),
+    start: new Date(y, m - 1, d, ds, 0, 0, 0).getTime(),
+    end: new Date(y, m - 1, d + (ds > 0 ? 1 : 0), endH, 59, 59, 999).getTime(),
   };
 }
 
@@ -49,6 +50,7 @@ export default function PurchaseListPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [dayStart] = useState(() => getDayStart());
 
   useEffect(() => {
     let cancelled = false;
@@ -79,8 +81,8 @@ export default function PurchaseListPage() {
   const fromTime = useMemo(() => parseDateBoundary(dateFrom, 'start'), [dateFrom]);
   const toTime = useMemo(() => parseDateBoundary(dateTo, 'end'), [dateTo]);
   const exactBounds = useMemo(
-    () => (dateExact ? dayBounds(dateExact) : null),
-    [dateExact],
+    () => (dateExact ? dayBounds(dateExact, dayStart) : null),
+    [dateExact, dayStart],
   );
 
   const visible = useMemo(() => {
