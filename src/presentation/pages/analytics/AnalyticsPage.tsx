@@ -90,21 +90,21 @@ function dayBounds(iso: string) {
 function monthBounds(iso: string) {
   const [y, m] = iso.split('-').map(Number);
   return {
-    start: new Date(y, m - 1, 1, 0, 0, 0, 0),
-    end: new Date(y, m, 0, 23, 59, 59, 999), // day-0 of next month = last day
+    start: new Date(y, m - 1, 1, 6, 0, 0, 0),
+    end: new Date(y, m, 1, 5, 59, 59, 999), // day 1 of next month at 5:59 AM
   };
 }
 function yearBounds(year: number) {
   return {
-    start: new Date(year, 0, 1, 0, 0, 0, 0),
-    end: new Date(year, 11, 31, 23, 59, 59, 999),
+    start: new Date(year, 0, 1, 6, 0, 0, 0),
+    end: new Date(year + 1, 0, 1, 5, 59, 59, 999),
   };
 }
 function customBounds(startISO: string, endISO: string) {
   const [sy, sm, sd] = startISO.split('-').map(Number);
   const [ey, em, ed] = endISO.split('-').map(Number);
-  const s = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
-  const e = new Date(ey, em - 1, ed, 23, 59, 59, 999);
+  const s = new Date(sy, sm - 1, sd, 6, 0, 0, 0);
+  const e = new Date(ey, em - 1, ed + 1, 5, 59, 59, 999);
   return s <= e ? { start: s, end: e } : { start: e, end: s };
 }
 

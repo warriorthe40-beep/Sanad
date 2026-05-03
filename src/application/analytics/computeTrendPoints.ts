@@ -58,7 +58,8 @@ export function computeTrendPoints(
         cursor.setDate(cursor.getDate() + 1);
       }
       for (const p of purchases) {
-        const d = p.purchaseDate;
+        const d = new Date(p.purchaseDate);
+        if (d.getHours() < 6) d.setDate(d.getDate() - 1);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const i = idx[key];
         if (i !== undefined) points[i].total += p.price;
