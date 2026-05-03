@@ -207,7 +207,7 @@ export default function AddPurchasePage() {
     try {
       const imageBlob =
         file.type === 'application/pdf' ? await pdfFirstPageToBlob(file) : file;
-      const data = await scanReceipt(imageBlob);
+      const data = await scanReceipt(imageBlob, storeHistory);
       const userId = getCurrentUserId();
       const freshAliases = await storeAliasRepository.getByUserId(userId).catch(() => aliases);
       setAliases(freshAliases);
@@ -249,7 +249,7 @@ export default function AddPurchasePage() {
     setIsPasting(true);
     setPasteNotice(null);
     try {
-      const data = await scanReceiptText(text);
+      const data = await scanReceiptText(text, storeHistory);
       const userId = getCurrentUserId();
       const freshAliases = await storeAliasRepository.getByUserId(userId).catch(() => aliases);
       setAliases(freshAliases);

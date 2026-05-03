@@ -37,6 +37,16 @@ const RECEIPT_EXTRACTION_PROMPT =
   '{"storeName":"<string>","amount":<number>,"date":"<YYYY-MM-DD>","confidence":<0-1>}. ' +
   'No explanation, no markdown — just the JSON object.';
 
+function buildPrompt(knownStores?: string[]): string {
+  if (!knownStores?.length) return RECEIPT_EXTRACTION_PROMPT;
+  const list = knownStores.slice(0, 40).join(', ');
+  return (
+    RECEIPT_EXTRACTION_PROMPT +
+    ` The user's known stores are: [${list}].` +
+    ' If the store on this receipt matches one of those names — even across scripts, transliterations, or abbreviations — use that exact known name as storeName.'
+  );
+}
+
 interface ExtractedReceipt {
   storeName: string;
   amount: number;
@@ -45,7 +55,8 @@ interface ExtractedReceipt {
 }
 
 export async function scanReceipt(
-  image: File | Blob
+  image: File | Blob,
+  knownStores?: string[],
 ): Promise<ScannedReceiptData> {
   const client = createAnthropicClient();
   const { data, mediaType } = await fileToBase64(image);
@@ -77,7 +88,7 @@ export async function scanReceipt(
         role: 'user',
         content: [
           receiptBlock,
-          { type: 'text', text: RECEIPT_EXTRACTION_PROMPT },
+          { type: 'text', text: buildPrompt(knownStores) },
         ],
       },
     ],
@@ -86,7 +97,10 @@ export async function scanReceipt(
   return parseReceiptResponse(response.content);
 }
 
-export async function scanReceiptText(text: string): Promise<ScannedReceiptData> {
+export async function scanReceiptText(
+  text: string,
+  knownStores?: string[],
+): Promise<ScannedReceiptData> {
   const client = createAnthropicClient();
 
   const response = await client.messages.create({
@@ -98,7 +112,7 @@ export async function scanReceiptText(text: string): Promise<ScannedReceiptData>
         content: [
           {
             type: 'text',
-            text: `${RECEIPT_EXTRACTION_PROMPT}\n\nReceipt text:\n${text}`,
+            text: `${buildPrompt(knownStores)}\n\nReceipt text:\n${text}`,
           },
         ],
       },
