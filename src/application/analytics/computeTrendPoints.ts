@@ -25,17 +25,19 @@ export function computeTrendPoints(
 ): TrendPoint[] {
   switch (granularity) {
     case 'hour': {
-      const points: TrendPoint[] = Array.from({ length: 24 }, (_, h) => ({
-        key: String(h),
-        label:
+      const DAY_START = 6;
+      const points: TrendPoint[] = Array.from({ length: 24 }, (_, slot) => {
+        const h = (DAY_START + slot) % 24;
+        const label =
           h === 0 ? '12 AM'
           : h < 12 ? `${h} AM`
           : h === 12 ? '12 PM'
-          : `${h - 12} PM`,
-        total: 0,
-      }));
+          : `${h - 12} PM`;
+        return { key: String(h), label, total: 0 };
+      });
       for (const p of purchases) {
-        points[p.purchaseDate.getHours()].total += p.price;
+        const slot = (p.purchaseDate.getHours() - DAY_START + 24) % 24;
+        points[slot].total += p.price;
       }
       return points;
     }
